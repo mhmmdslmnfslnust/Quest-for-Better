@@ -24,8 +24,9 @@ export const AuthProvider = ({ children }) => {
       if (savedToken) {
         try {
           const response = await authAPI.verifyToken();
-          if (response.success) {
-            setUser(response.data.user);
+          // The response should already be the data due to our API interceptor fix
+          if (response && response.user) {
+            setUser(response.user);
             setToken(savedToken);
           } else {
             localStorage.removeItem('habitquest_token');
@@ -48,16 +49,17 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await authAPI.login(email, password);
       
-      if (response.success) {
-        const { user: userData, token: userToken } = response.data;
+      // The response should already be the data due to our API interceptor fix
+      if (response && response.user && response.token) {
+        const { user: userData, token: userToken } = response;
         setUser(userData);
         setToken(userToken);
         localStorage.setItem('habitquest_token', userToken);
         toast.success('Welcome back! 🎉');
         return { success: true };
       } else {
-        toast.error(response.message || 'Login failed');
-        return { success: false, message: response.message };
+        toast.error('Login failed - Invalid response format');
+        return { success: false, message: 'Invalid response format' };
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
@@ -73,16 +75,17 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await authAPI.register(userData);
       
-      if (response.success) {
-        const { user: newUser, token: userToken } = response.data;
+      // The response should already be the data due to our API interceptor fix
+      if (response && response.user && response.token) {
+        const { user: newUser, token: userToken } = response;
         setUser(newUser);
         setToken(userToken);
         localStorage.setItem('habitquest_token', userToken);
         toast.success('Welcome to HabitQuest! 🚀');
         return { success: true };
       } else {
-        toast.error(response.message || 'Registration failed');
-        return { success: false, message: response.message };
+        toast.error('Registration failed - Invalid response format');
+        return { success: false, message: 'Invalid response format' };
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';

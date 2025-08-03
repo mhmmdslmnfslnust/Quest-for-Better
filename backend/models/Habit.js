@@ -206,19 +206,63 @@ class Habit {
         return await db.query(sql, [userId, category]);
     }
 
-    // Get today's habit status for user
-    static async getTodayStatus(userId, date) {
+    // Get today's habit logs for user
+    static async getTodayLogs(userId, date) {
         const sql = `
-            SELECT h.id, h.name, h.color, h.icon, h.type,
-                   hl.success as logged_today,
-                   hl.notes as today_notes
-            FROM habits h
-            LEFT JOIN habit_logs hl ON h.id = hl.habit_id AND hl.date = ?
-            WHERE h.user_id = ? AND h.is_active = 1
-            ORDER BY h.created_at ASC
+            SELECT hl.*, h.name as habit_name
+            FROM habit_logs hl
+            JOIN habits h ON hl.habit_id = h.id
+            WHERE h.user_id = ? AND hl.date = ?
+            ORDER BY hl.logged_at DESC
         `;
         
-        return await db.query(sql, [date, userId]);
+        return await db.query(sql, [userId, date]);
+    }
+
+    // Get current streak for a habit
+    static async getCurrentStreak(habitId) {
+        const today = new Date().toISOString().split('T')[0];
+        const logs = await db.query(`
+            SELECT date, success
+            FROM habit_logs
+            WHERE habit_id = ? AND date <= ?
+            ORDER BY date DESC
+            LIMIT 100
+        `, [habitId, today]);
+
+        let streak = 0;
+        let consecutiveDays = 0;
+        const oneDay = 24 * 60 * 60 * 1000;
+        
+        for (let i = 0; i < logs.length; i++) {
+            const logDate = new Date(logs[i].date);
+            const expectedDate = new Date(Date.now() - (consecutiveDays * oneDay));
+            const expectedDateStr = expectedDate.toISOString().split('T')[0];
+            
+            if (logs[i].date === expectedDateStr) {
+                if (logs[i].success === 1) {
+                    streak++;
+                } else {
+                    break;
+                }
+                consecutiveDays++;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    }
+
+    // Get log by date
+    static async getLogByDate(habitId, date) {
+        const sql = `
+            SELECT * FROM habit_logs
+            WHERE habit_id = ? AND date = ?
+            LIMIT 1
+        `;
+        
+        return await db.get(sql, [habitId, date]);
     }
 }
 

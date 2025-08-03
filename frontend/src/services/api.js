@@ -26,6 +26,11 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
+    // If the response has the standard format with data property, extract it
+    if (response.data && response.data.success && response.data.data !== undefined) {
+      return response.data.data;
+    }
+    // Otherwise return the full response data
     return response.data;
   },
   (error) => {
