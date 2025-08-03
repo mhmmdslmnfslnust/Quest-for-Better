@@ -175,6 +175,16 @@ class Achievement {
     // Award achievement to user
     static async awardAchievement(userId, achievementId) {
         try {
+            // Check if achievement already earned
+            const existing = await db.query(`
+                SELECT id FROM user_achievements 
+                WHERE user_id = ? AND achievement_id = ?
+            `, [userId, achievementId]);
+            
+            if (existing.length > 0) {
+                return true; // Already earned
+            }
+            
             // Insert user achievement
             await db.query(`
                 INSERT INTO user_achievements (user_id, achievement_id)
@@ -332,7 +342,7 @@ class Achievement {
             const allAchievements = await this.getAllAchievements();
             const userAchievements = await this.getUserAchievements(userId);
             
-            const earnedIds = userAchievements.map(ua => ua.achievement_id);
+            const earnedIds = userAchievements.map(ua => ua.id);
             
             const progress = [];
             
@@ -367,7 +377,7 @@ class Achievement {
                 progress.push({
                     ...achievement,
                     is_earned: isEarned,
-                    earned_at: isEarned ? userAchievements.find(ua => ua.achievement_id === achievement.id).earned_at : null,
+                    earned_at: isEarned ? userAchievements.find(ua => ua.id === achievement.id).earned_at : null,
                     progress: {
                         current: isEarned ? achievement.condition_value : currentProgress,
                         target: achievement.condition_value
