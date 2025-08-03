@@ -6,8 +6,16 @@ const dbPath = path.join(__dirname, 'habitquest.db');
 
 // Remove existing database file if it exists
 if (fs.existsSync(dbPath)) {
-    fs.unlinkSync(dbPath);
-    console.log('Existing database removed');
+    try {
+        fs.unlinkSync(dbPath);
+        console.log('Existing database removed');
+    } catch (error) {
+        if (error.code === 'EBUSY') {
+            console.log('Database file is locked, will recreate tables instead...');
+        } else {
+            throw error;
+        }
+    }
 }
 
 const db = new sqlite3.Database(dbPath);
