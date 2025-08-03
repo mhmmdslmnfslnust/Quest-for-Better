@@ -79,10 +79,13 @@ export const achievementsAPI = {
 // Challenges API
 export const challengesAPI = {
   getAll: () => api.get('/challenges'),
+  getTrending: (limit = 5) => api.get(`/challenges/trending?limit=${limit}`),
   getUserChallenges: () => api.get('/challenges/user'),
   join: (id) => api.post(`/challenges/${id}/join`),
   updateProgress: (id) => api.post(`/challenges/${id}/progress`),
-  getLeaderboard: (id) => api.get(`/challenges/${id}/leaderboard`),
+  getLeaderboard: (id, limit = 20) => api.get(`/challenges/${id}/leaderboard?limit=${limit}`),
+  getStats: (id) => api.get(`/challenges/${id}/stats`),
+  getUserRank: (id) => api.get(`/challenges/${id}/rank`),
 };
 
 // Stats API
