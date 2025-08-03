@@ -67,11 +67,11 @@ Quest-for-Better/
 │       │   │   ├── RarityBadge.js     # ✅ Achievement rarity indicator
 │       │   │   └── AchievementToast.js # ✅ Unlock notification component
 │       │   │
-│       │   └── challenges/            # ✅ PHASE 3.1 COMPLETED - Challenge System Components
-│       │       ├── ChallengeCard.js   # ✅ Status-aware challenge display with animations
-│       │       ├── ChallengeGallery.js # ✅ Grid layout with advanced filtering
-│       │       ├── ChallengeModal.js  # ✅ Detailed view with leaderboard tabs
-│       │       ├── Leaderboard.js     # ✅ Podium display and ranking system
+│       │   └── challenges/            # ✅ PHASE 3.2 COMPLETED - Complete Challenge System with Leave Functionality
+│       │       ├── ChallengeCard.js   # ✅ Smart button states (Update Progress vs Join) with status-aware design
+│       │       ├── ChallengeGallery.js # ✅ Grid layout with advanced filtering and proper user challenge detection
+│       │       ├── ChallengeModal.js  # ✅ Complete modal with leaderboards, progress tracking, and leave dialog
+│       │       ├── Leaderboard.js     # ✅ Podium display with fixed target values (no more infinity symbols)
 │       │       └── ChallengeToast.js  # ✅ Challenge notification component
 │       │
 │       ├── pages/                     # Main page components
