@@ -26,8 +26,8 @@ const StatusIcon = styled.div`
   height: 20px;
   border-radius: 50%;
   background: ${props => {
-    if (props.status === 'completed') return '#22c55e';
-    if (props.status === 'failed') return '#ef4444';
+    if (props.$status === 'completed') return '#22c55e';
+    if (props.$status === 'failed') return '#ef4444';
     return 'rgba(255, 255, 255, 0.2)';
   }};
   color: white;
@@ -124,7 +124,7 @@ const HabitTrackingButton = ({
     return (
       <TrackingContainer>
         <StatusDisplay>
-          <StatusIcon status={todayLog.success ? 'completed' : 'failed'}>
+          <StatusIcon $status={todayLog.success ? 'completed' : 'failed'}>
             {todayLog.success ? <Check size={12} /> : <X size={12} />}
           </StatusIcon>
           <span>
@@ -145,7 +145,7 @@ const HabitTrackingButton = ({
   return (
     <TrackingContainer>
       <StatusDisplay>
-        <StatusIcon status="pending">
+        <StatusIcon $status="pending">
           <Clock size={12} />
         </StatusIcon>
         <span>Track today's progress</span>

@@ -98,14 +98,17 @@ const ActionButton = styled.button`
   position: relative;
 
   svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+    fill: none;
     transition: all 0.2s ease;
   }
 
   &[title*="Edit"] {
-    color: #3b82f6;
-    
     svg {
-      color: #3b82f6;
+      stroke: #3b82f6 !important;
+      color: #3b82f6 !important;
     }
     
     &:hover {
@@ -114,16 +117,16 @@ const ActionButton = styled.button`
       transform: scale(1.1);
       
       svg {
-        color: #60a5fa;
+        stroke: #60a5fa !important;
+        color: #60a5fa !important;
       }
     }
   }
 
   &[title*="Delete"] {
-    color: #ef4444;
-    
     svg {
-      color: #ef4444;
+      stroke: #ef4444 !important;
+      color: #ef4444 !important;
     }
     
     &:hover {
@@ -132,7 +135,8 @@ const ActionButton = styled.button`
       transform: scale(1.1);
       
       svg {
-        color: #f87171;
+        stroke: #f87171 !important;
+        color: #f87171 !important;
       }
     }
   }
