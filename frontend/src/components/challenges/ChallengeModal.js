@@ -334,6 +334,15 @@ const ActionButton = styled.button`
             box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
           }
         `;
+      case 'danger':
+        return `
+          background: linear-gradient(135deg, #e53e3e, #c53030);
+          color: white;
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3);
+          }
+        `;
       case 'secondary':
       default:
         return `
@@ -361,12 +370,14 @@ const ChallengeModal = ({
   onClose, 
   onJoin, 
   onUpdateProgress,
+  onLeaveChallenge,
   isUserChallenge = false 
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [leaderboard, setLeaderboard] = useState([]);
   const [challengeStats, setChallengeStats] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   
   const { getLeaderboard, getChallengeStats } = useChallenges();
 
@@ -415,6 +426,15 @@ const ChallengeModal = ({
       setLoading(true);
       await onUpdateProgress(challenge.id);
       setLoading(false);
+    }
+  };
+
+  const handleLeaveChallenge = async () => {
+    if (onLeaveChallenge) {
+      setLoading(true);
+      await onLeaveChallenge(challenge.id);
+      setLoading(false);
+      setShowLeaveConfirm(false);
     }
   };
 
@@ -567,6 +587,7 @@ const ChallengeModal = ({
                 <Leaderboard
                   challengeId={challenge.id}
                   challengeName={challenge.name}
+                  challengeTargetValue={challenge.target_value}
                   leaderboardData={leaderboard}
                   stats={challengeStats}
                   loading={loading}
@@ -577,14 +598,25 @@ const ChallengeModal = ({
             <ActionButtons>
               {isUserChallenge ? (
                 challenge.status === 'active' ? (
-                  <ActionButton 
-                    $variant="update" 
-                    onClick={handleUpdateProgress}
-                    disabled={loading}
-                  >
-                    <Zap size={16} />
-                    Update Progress
-                  </ActionButton>
+                  <>
+                    <ActionButton 
+                      $variant="danger" 
+                      onClick={() => setShowLeaveConfirm(true)}
+                      disabled={loading}
+                      style={{ marginRight: '12px' }}
+                    >
+                      <X size={16} />
+                      Leave Challenge
+                    </ActionButton>
+                    <ActionButton 
+                      $variant="update" 
+                      onClick={handleUpdateProgress}
+                      disabled={loading}
+                    >
+                      <Zap size={16} />
+                      Update Progress
+                    </ActionButton>
+                  </>
                 ) : (
                   <ActionButton $variant="secondary" onClick={onClose}>
                     Close
@@ -605,6 +637,42 @@ const ChallengeModal = ({
                   </ActionButton>
                 </>
               )}
+            </ActionButtons>
+          </Modal>
+        </Overlay>
+      )}
+      
+      {/* Leave Challenge Confirmation Dialog */}
+      {showLeaveConfirm && (
+        <Overlay onClick={() => setShowLeaveConfirm(false)}>
+          <Modal
+            as={motion.div}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '400px', padding: '24px' }}
+          >
+            <h3 style={{ marginBottom: '16px', color: '#e53e3e' }}>Leave Challenge</h3>
+            <p style={{ marginBottom: '24px', color: '#666' }}>
+              Are you sure you want to leave this challenge? Your progress will be saved, but you won't be able to rejoin this challenge.
+            </p>
+            <ActionButtons>
+              <ActionButton 
+                $variant="secondary" 
+                onClick={() => setShowLeaveConfirm(false)}
+                style={{ marginRight: '12px' }}
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton 
+                $variant="danger" 
+                onClick={handleLeaveChallenge}
+                disabled={loading}
+              >
+                <X size={16} />
+                Leave Challenge
+              </ActionButton>
             </ActionButtons>
           </Modal>
         </Overlay>

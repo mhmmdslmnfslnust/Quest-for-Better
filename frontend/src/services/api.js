@@ -83,6 +83,7 @@ export const challengesAPI = {
   getUserChallenges: () => api.get('/challenges/user'),
   join: (id) => api.post(`/challenges/${id}/join`),
   updateProgress: (id) => api.post(`/challenges/${id}/progress`),
+  leave: (id) => api.delete(`/challenges/${id}/leave`),
   getLeaderboard: (id, limit = 20) => api.get(`/challenges/${id}/leaderboard?limit=${limit}`),
   getStats: (id) => api.get(`/challenges/${id}/stats`),
   getUserRank: (id) => api.get(`/challenges/${id}/rank`),

@@ -87,6 +87,28 @@ export const useChallenges = () => {
         }
     }, [fetchUserChallenges]);
 
+    // Leave a challenge
+    const leaveChallenge = useCallback(async (challengeId) => {
+        try {
+            setError(null);
+            const result = await challengesAPI.leave(challengeId);
+            
+            // Refresh user challenges after leaving
+            await fetchUserChallenges();
+            
+            return { 
+                success: true, 
+                data: result,
+                message: 'Successfully left the challenge'
+            };
+        } catch (err) {
+            console.error('Error leaving challenge:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to leave challenge';
+            setError(errorMessage);
+            return { success: false, message: errorMessage };
+        }
+    }, [fetchUserChallenges]);
+
     // Get challenge leaderboard
     const getLeaderboard = useCallback(async (challengeId, limit = 20) => {
         try {
@@ -196,6 +218,7 @@ export const useChallenges = () => {
         fetchTrendingChallenges,
         joinChallenge,
         updateProgress,
+        leaveChallenge,
         getLeaderboard,
         getChallengeStats,
         getUserRank,

@@ -80,6 +80,38 @@ const TabButton = styled.button`
   }
 `;
 
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+`;
+
+const StatCard = styled(motion.div)`
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+`;
+
 const LoadingContainer = styled.div`
   display: flex;
   align-items: center;
@@ -96,87 +128,12 @@ const ErrorContainer = styled.div`
   text-align: center;
   color: #ef4444;
   margin-bottom: 24px;
-  
-  h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  
-  p {
-    font-size: 14px;
-    opacity: 0.8;
-  }
-`;
-
-const RefreshButton = styled.button`
-  margin-top: 16px;
-  padding: 10px 20px;
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 8px;
-  color: #ef4444;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(239, 68, 68, 0.1);
-  }
-`;
-
-const QuickStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
-`;
-
-const StatCard = styled(motion.div)`
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  padding: 24px;
-  text-align: center;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-`;
-
-const StatIcon = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: ${props => props.$color}20;
-  margin: 0 auto 16px;
-  color: ${props => props.$color};
-`;
-
-const StatValue = styled.div`
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin-bottom: 8px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  font-weight: 500;
 `;
 
 const ChallengesPage = () => {
   const [activeTab, setActiveTab] = useState('available');
   const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-
+  
   const {
     challenges,
     userChallenges,
@@ -189,91 +146,87 @@ const ChallengesPage = () => {
     fetchTrendingChallenges,
     joinChallenge,
     updateProgress,
-    getAvailableChallenges,
-    clearError
+    leaveChallenge
   } = useChallenges();
 
-  // Load user challenges when component mounts
   useEffect(() => {
-    fetchUserChallenges();
-  }, [fetchUserChallenges]);
-
-  const handleJoinChallenge = async (challengeId) => {
-    const result = await joinChallenge(challengeId);
-    if (result.success) {
-      toast.success(result.message);
-      setModalOpen(false);
-      setSelectedChallenge(null);
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  const handleUpdateProgress = async (challengeId) => {
-    const result = await updateProgress(challengeId);
-    if (result.success) {
-      toast.success(result.message);
-      if (result.data?.completed) {
-        toast.success(`🎉 You earned ${result.data.points_awarded} points!`, {
-          duration: 5000,
-        });
-      }
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  const handleViewDetails = (challenge) => {
-    setSelectedChallenge(challenge);
-    setModalOpen(true);
-  };
-
-  const handleRetry = () => {
-    clearError();
     fetchChallenges();
     fetchUserChallenges();
     fetchTrendingChallenges();
+  }, [fetchChallenges, fetchUserChallenges, fetchTrendingChallenges]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
   };
 
-  const getTabData = () => {
-    switch (activeTab) {
-      case 'my-challenges':
-        return {
-          data: userChallenges,
-          isUserChallenges: true,
-          showStats: true
-        };
-      case 'trending':
-        return {
-          data: trendingChallenges,
-          isUserChallenges: false,
-          showStats: false
-        };
-      case 'available':
-      default:
-        return {
-          data: getAvailableChallenges(),
-          isUserChallenges: false,
-          showStats: false
-        };
+  const handleUpdateProgress = async (challengeId) => {
+    try {
+      const result = await updateProgress(challengeId);
+      if (result.success) {
+        toast.success(result.message);
+        fetchUserChallenges(); // Refresh user challenges
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error('Failed to update progress');
     }
   };
 
-  const tabData = getTabData();
+  const handleChallengeClick = (challenge) => {
+    setSelectedChallenge(challenge);
+  };
 
-  if (loading && challenges.length === 0 && userChallenges.length === 0) {
+  const handleJoinChallenge = async (challengeId) => {
+    try {
+      await joinChallenge(challengeId);
+      toast.success('Successfully joined challenge!');
+      fetchUserChallenges(); // Refresh user challenges
+    } catch (error) {
+      toast.error('Failed to join challenge');
+    }
+  };
+
+  const handleLeaveChallenge = async (challengeId) => {
+    try {
+      const result = await leaveChallenge(challengeId);
+      if (result.success) {
+        toast.success(result.message);
+        setSelectedChallenge(null); // Close the modal
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error('Failed to leave challenge');
+    }
+  };
+
+  const getTabChallenges = () => {
+    switch (activeTab) {
+      case 'available':
+        return challenges.filter(c => !userChallenges.some(uc => uc.id === c.id));
+      case 'my-challenges':
+        return userChallenges;
+      case 'trending':
+        return trendingChallenges;
+      default:
+        return challenges;
+    }
+  };
+
+  const getTabStats = () => {
+    const totalChallenges = challenges.length;
+    const activeChallenges = userChallenges.filter(c => c.status === 'active').length;
+    const completedChallenges = userChallenges.filter(c => c.status === 'completed').length;
+    
+    return { totalChallenges, activeChallenges, completedChallenges };
+  };
+
+  const tabStats = getTabStats();
+
+  if (loading && challenges.length === 0) {
     return (
       <PageContainer>
-        <Header>
-          <Title>
-            <Zap />
-            Challenges
-          </Title>
-          <Subtitle>
-            Join time-limited challenges to earn bonus points and compete with the community!
-          </Subtitle>
-        </Header>
-        
         <LoadingContainer>
           <div>Loading challenges...</div>
         </LoadingContainer>
@@ -285,125 +238,107 @@ const ChallengesPage = () => {
     <PageContainer>
       <Header>
         <Title>
-          <Zap />
+          <Trophy />
           Challenges
         </Title>
         <Subtitle>
-          Join time-limited challenges to earn bonus points and compete with the community!
+          Community challenges and competitions to boost your habit-building journey. 
+          Compete with others, earn bonus rewards, and stay motivated together!
         </Subtitle>
       </Header>
 
       {error && (
         <ErrorContainer>
-          <h3>Unable to load challenges</h3>
+          <h3>Error loading challenges</h3>
           <p>{error}</p>
-          <RefreshButton onClick={handleRetry}>
-            Try Again
-          </RefreshButton>
         </ErrorContainer>
       )}
 
-      {/* Quick Stats Overview */}
-      <QuickStats>
+      <StatsGrid>
         <StatCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <StatIcon $color="#3b82f6">
-            <Target />
-          </StatIcon>
-          <StatValue>{stats.totalAvailable}</StatValue>
-          <StatLabel>Available Challenges</StatLabel>
+          <StatValue>{tabStats.totalChallenges}</StatValue>
+          <StatLabel>
+            <Target size={14} />
+            Total Challenges
+          </StatLabel>
         </StatCard>
-
+        
         <StatCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <StatIcon $color="#059669">
-            <Trophy />
-          </StatIcon>
-          <StatValue>{stats.completed}</StatValue>
-          <StatLabel>Completed</StatLabel>
+          <StatValue>{tabStats.activeChallenges}</StatValue>
+          <StatLabel>
+            <Zap size={14} />
+            Active Challenges
+          </StatLabel>
         </StatCard>
-
+        
         <StatCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <StatIcon $color="#dc2626">
-            <Zap />
-          </StatIcon>
-          <StatValue>{stats.active}</StatValue>
-          <StatLabel>Active Challenges</StatLabel>
+          <StatValue>{tabStats.completedChallenges}</StatValue>
+          <StatLabel>
+            <Trophy size={14} />
+            Completed
+          </StatLabel>
         </StatCard>
-
-        <StatCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <StatIcon $color="#7c3aed">
-            <TrendingUp />
-          </StatIcon>
-          <StatValue>{stats.completionRate}%</StatValue>
-          <StatLabel>Success Rate</StatLabel>
-        </StatCard>
-      </QuickStats>
+      </StatsGrid>
 
       <TabSection>
         <TabButtons>
           <TabButton
             $active={activeTab === 'available'}
-            onClick={() => setActiveTab('available')}
+            onClick={() => handleTabChange('available')}
           >
             <Target size={16} />
-            Available ({getAvailableChallenges().length})
+            Available
           </TabButton>
-          
           <TabButton
             $active={activeTab === 'my-challenges'}
-            onClick={() => setActiveTab('my-challenges')}
+            onClick={() => handleTabChange('my-challenges')}
           >
-            <Trophy size={16} />
-            My Challenges ({userChallenges.length})
+            <Users size={16} />
+            My Challenges
           </TabButton>
-          
           <TabButton
             $active={activeTab === 'trending'}
-            onClick={() => setActiveTab('trending')}
+            onClick={() => handleTabChange('trending')}
           >
             <TrendingUp size={16} />
-            Trending ({trendingChallenges.length})
+            Trending
           </TabButton>
         </TabButtons>
 
         <ChallengeGallery
-          challenges={tabData.data}
-          showStats={tabData.showStats}
+          challenges={getTabChallenges()}
+          onViewDetails={handleChallengeClick}
           onJoinChallenge={handleJoinChallenge}
           onUpdateProgress={handleUpdateProgress}
-          onViewDetails={handleViewDetails}
-          isUserChallenges={tabData.isUserChallenges}
+          isUserChallenges={activeTab === 'my-challenges'}
           loading={loading}
           stats={stats}
         />
       </TabSection>
 
-      <ChallengeModal
-        challenge={selectedChallenge}
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setSelectedChallenge(null);
-        }}
-        onJoin={handleJoinChallenge}
-        onUpdateProgress={handleUpdateProgress}
-        isUserChallenge={tabData.isUserChallenges}
-      />
+      {selectedChallenge && (
+        <ChallengeModal
+          challenge={selectedChallenge}
+          isOpen={!!selectedChallenge}
+          onClose={() => setSelectedChallenge(null)}
+          onJoin={() => handleJoinChallenge(selectedChallenge.id)}
+          onUpdateProgress={() => handleUpdateProgress(selectedChallenge.id)}
+          onLeaveChallenge={() => handleLeaveChallenge(selectedChallenge.id)}
+          isUserChallenge={userChallenges.some(uc => uc.id === selectedChallenge.id)}
+        />
+      )}
     </PageContainer>
   );
 };

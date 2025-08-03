@@ -124,4 +124,22 @@ router.get('/:id/rank', authenticateToken, asyncHandler(async (req, res) => {
     }
 }));
 
+// Leave a challenge (requires authentication)
+router.delete('/:id/leave', authenticateToken, asyncHandler(async (req, res) => {
+    try {
+        const challengeId = req.params.id;
+        const userId = req.user.id;
+        
+        const result = await Challenge.leaveChallenge(userId, challengeId);
+        if (result.success) {
+            successResponse(res, { message: 'Successfully left the challenge' });
+        } else {
+            errorResponse(res, 400, result.message || 'Failed to leave challenge');
+        }
+    } catch (error) {
+        console.error('Leave challenge error:', error);
+        errorResponse(res, 500, 'Failed to leave challenge');
+    }
+}));
+
 module.exports = router;

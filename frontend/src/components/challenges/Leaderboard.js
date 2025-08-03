@@ -285,6 +285,7 @@ const EmptyState = styled.div`
 const Leaderboard = ({ 
   challengeId, 
   challengeName,
+  challengeTargetValue,
   leaderboardData = [], 
   stats = {},
   onRefresh,
@@ -382,7 +383,7 @@ const Leaderboard = ({
                       <PodiumIcon>{getRankIcon(position)}</PodiumIcon>
                       <PodiumUsername>{participant.username}</PodiumUsername>
                       <PodiumProgress>
-                        {participant.current_progress} / {participant.target_value || '∞'}
+                        {participant.current_progress} / {participant.target_value || challengeTargetValue || 'Goal'}
                       </PodiumProgress>
                       {participant.progress_percentage && (
                         <PodiumProgress>

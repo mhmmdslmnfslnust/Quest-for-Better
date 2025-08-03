@@ -332,6 +332,38 @@ class Challenge {
             throw error;
         }
     }
+
+    // Leave a challenge
+    static async leaveChallenge(userId, challengeId) {
+        try {
+            // Check if user is actually participating in this challenge
+            const userChallenge = await db.get(`
+                SELECT * FROM user_challenges 
+                WHERE user_id = ? AND challenge_id = ? AND is_completed = 0
+            `, [userId, challengeId]);
+
+            if (!userChallenge) {
+                return { 
+                    success: false, 
+                    message: 'You are not currently participating in this challenge' 
+                };
+            }
+
+            // Remove the user from the challenge
+            await db.run(`
+                DELETE FROM user_challenges 
+                WHERE user_id = ? AND challenge_id = ?
+            `, [userId, challengeId]);
+
+            return { 
+                success: true, 
+                message: 'Successfully left the challenge' 
+            };
+        } catch (error) {
+            console.error('Error leaving challenge:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = Challenge;
