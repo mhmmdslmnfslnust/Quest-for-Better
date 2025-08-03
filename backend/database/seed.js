@@ -6,39 +6,32 @@ const db = new sqlite3.Database(dbPath);
 
 // Seed data for achievements
 const achievements = [
-    // Beginner achievements
-    { name: 'First Steps', description: 'Complete your first habit log', category: 'beginner', condition_type: 'habit_logs', condition_value: 1, points_reward: 50, badge_emoji: '👶', rarity: 'common' },
-    { name: 'Getting Started', description: 'Log habits for 3 consecutive days', category: 'streak', condition_type: 'streak_days', condition_value: 3, points_reward: 100, badge_emoji: '🌱', rarity: 'common' },
-    { name: 'Week Warrior', description: 'Maintain a 7-day streak', category: 'streak', condition_type: 'streak_days', condition_value: 7, points_reward: 200, badge_emoji: '⚔️', rarity: 'rare' },
+    // 🔥 Streak Achievements
+    { name: 'Getting Started', description: 'Complete habits for 1 day', category: 'streak', condition_type: 'streak', condition_value: 1, points_reward: 25, badge_emoji: '�', badge_color: '#ff6b35', rarity: 'common' },
+    { name: 'Building Momentum', description: 'Maintain a 3-day streak', category: 'streak', condition_type: 'streak', condition_value: 3, points_reward: 50, badge_emoji: '🔥', badge_color: '#ff6b35', rarity: 'common' },
+    { name: 'Week Warrior', description: 'Achieve a 7-day streak', category: 'streak', condition_type: 'streak', condition_value: 7, points_reward: 100, badge_emoji: '🔥', badge_color: '#ff6b35', rarity: 'rare' },
+    { name: 'Month Master', description: 'Complete a 30-day streak', category: 'streak', condition_type: 'streak', condition_value: 30, points_reward: 500, badge_emoji: '🔥', badge_color: '#ff6b35', rarity: 'epic' },
+    { name: 'Habit Hero', description: 'Maintain a 60-day streak', category: 'streak', condition_type: 'streak', condition_value: 60, points_reward: 1000, badge_emoji: '�', badge_color: '#ff6b35', rarity: 'epic' },
+    { name: 'Legendary Streaker', description: 'Reach a 100-day streak', category: 'streak', condition_type: 'streak', condition_value: 100, points_reward: 2000, badge_emoji: '�', badge_color: '#ff6b35', rarity: 'legendary' },
     
-    // Streak achievements
-    { name: 'Two Week Champion', description: 'Achieve a 14-day streak', category: 'streak', condition_type: 'streak_days', condition_value: 14, points_reward: 400, badge_emoji: '🏅', rarity: 'rare' },
-    { name: 'Month Master', description: 'Complete a 30-day streak', category: 'streak', condition_type: 'streak_days', condition_value: 30, points_reward: 800, badge_emoji: '👑', rarity: 'epic' },
-    { name: 'Century Club', description: 'Reach a 100-day streak', category: 'streak', condition_type: 'streak_days', condition_value: 100, points_reward: 2000, badge_emoji: '💎', rarity: 'legendary' },
+    // 💰 Point Achievements  
+    { name: 'First Steps', description: 'Earn your first 100 points', category: 'points', condition_type: 'total_points', condition_value: 100, points_reward: 25, badge_emoji: '�', badge_color: '#6366f1', rarity: 'common' },
+    { name: 'Rising Star', description: 'Accumulate 500 points', category: 'points', condition_type: 'total_points', condition_value: 500, points_reward: 100, badge_emoji: '💎', badge_color: '#6366f1', rarity: 'common' },
+    { name: 'Point Collector', description: 'Reach 1,000 points', category: 'points', condition_type: 'total_points', condition_value: 1000, points_reward: 250, badge_emoji: '💎', badge_color: '#6366f1', rarity: 'rare' },
+    { name: 'Elite Scorer', description: 'Achieve 5,000 points', category: 'points', condition_type: 'total_points', condition_value: 5000, points_reward: 1000, badge_emoji: '�', badge_color: '#6366f1', rarity: 'epic' },
+    { name: 'Point Legend', description: 'Accumulate 25,000 points', category: 'points', condition_type: 'total_points', condition_value: 25000, points_reward: 5000, badge_emoji: '�', badge_color: '#6366f1', rarity: 'legendary' },
     
-    // Points achievements
-    { name: 'Point Collector', description: 'Earn your first 100 points', category: 'points', condition_type: 'total_points', condition_value: 100, points_reward: 25, badge_emoji: '💰', rarity: 'common' },
-    { name: 'Point Hoarder', description: 'Accumulate 1000 points', category: 'points', condition_type: 'total_points', condition_value: 1000, points_reward: 100, badge_emoji: '💎', rarity: 'rare' },
-    { name: 'Point Millionaire', description: 'Reach 10,000 points', category: 'points', condition_type: 'total_points', condition_value: 10000, points_reward: 500, badge_emoji: '🏆', rarity: 'epic' },
+    // 🎯 Habit-Specific Achievements
+    { name: 'Habit Creator', description: 'Create your first 5 habits', category: 'habits', condition_type: 'habits_created', condition_value: 5, points_reward: 100, badge_emoji: '🎯', badge_color: '#10b981', rarity: 'common' },
+    { name: 'Variety Seeker', description: 'Try 3 different categories', category: 'habits', condition_type: 'category_variety', condition_value: 3, points_reward: 200, badge_emoji: '�', badge_color: '#10b981', rarity: 'rare' },
+    { name: 'Consistency King', description: 'Complete 50 habit logs', category: 'habits', condition_type: 'habits_completed', condition_value: 50, points_reward: 750, badge_emoji: '�', badge_color: '#10b981', rarity: 'epic' },
+    { name: 'Master Builder', description: 'Complete 200 habit logs', category: 'habits', condition_type: 'habits_completed', condition_value: 200, points_reward: 1500, badge_emoji: '🎯', badge_color: '#10b981', rarity: 'legendary' },
     
-    // Habit specific achievements
-    { name: 'Habit Creator', description: 'Create your first habit', category: 'habits', condition_type: 'habits_created', condition_value: 1, points_reward: 25, badge_emoji: '📝', rarity: 'common' },
-    { name: 'Habit Collector', description: 'Create 5 different habits', category: 'habits', condition_type: 'habits_created', condition_value: 5, points_reward: 150, badge_emoji: '📚', rarity: 'rare' },
-    { name: 'Habit Master', description: 'Successfully complete 100 habit logs', category: 'habits', condition_type: 'habit_logs', condition_value: 100, points_reward: 500, badge_emoji: '🎯', rarity: 'epic' },
-    
-    // Special achievements
-    { name: 'Weekend Warrior', description: 'Log habits on both Saturday and Sunday', category: 'special', condition_type: 'weekend_logs', condition_value: 2, points_reward: 100, badge_emoji: '🎉', rarity: 'rare' },
-    { name: 'Early Bird', description: 'Log a habit before 8 AM', category: 'special', condition_type: 'early_log', condition_value: 1, points_reward: 75, badge_emoji: '🌅', rarity: 'common' },
-    { name: 'Night Owl', description: 'Log a habit after 10 PM', category: 'special', condition_type: 'late_log', condition_value: 1, points_reward: 75, badge_emoji: '🦉', rarity: 'common' },
-    
-    // Level achievements
-    { name: 'Level Up!', description: 'Reach level 2', category: 'level', condition_type: 'user_level', condition_value: 2, points_reward: 100, badge_emoji: '⬆️', rarity: 'common' },
-    { name: 'Rising Star', description: 'Reach level 5', category: 'level', condition_type: 'user_level', condition_value: 5, points_reward: 250, badge_emoji: '⭐', rarity: 'rare' },
-    { name: 'Champion', description: 'Reach level 10', category: 'level', condition_type: 'user_level', condition_value: 10, points_reward: 500, badge_emoji: '🏆', rarity: 'epic' },
-    
-    // Secret achievements
-    { name: 'Perfect Week', description: 'Complete all your habits every day for a week', category: 'secret', condition_type: 'perfect_week', condition_value: 7, points_reward: 300, badge_emoji: '✨', rarity: 'epic', is_secret: true },
-    { name: 'Comeback Kid', description: 'Log a habit after missing 3 days', category: 'secret', condition_type: 'comeback', condition_value: 1, points_reward: 150, badge_emoji: '💪', rarity: 'rare', is_secret: true }
+    // 🌟 Special Achievements
+    { name: 'Early Bird', description: 'Complete a habit before 7 AM', category: 'special', condition_type: 'early_bird', condition_value: 1, points_reward: 200, badge_emoji: '🌅', badge_color: '#f59e0b', rarity: 'rare' },
+    { name: 'Night Owl', description: 'Complete a habit after 10 PM', category: 'special', condition_type: 'night_owl', condition_value: 1, points_reward: 200, badge_emoji: '�', badge_color: '#8b5cf6', rarity: 'rare' },
+    { name: 'Perfect Week', description: 'Complete all habits for 7 days', category: 'special', condition_type: 'perfect_week', condition_value: 7, points_reward: 500, badge_emoji: '⭐', badge_color: '#fbbf24', rarity: 'epic' },
+    { name: 'Comeback Kid', description: 'Restart after a 7+ day break', category: 'special', condition_type: 'comeback', condition_value: 1, points_reward: 100, badge_emoji: '💪', badge_color: '#ef4444', rarity: 'common' }
 ];
 
 // Seed data for challenges

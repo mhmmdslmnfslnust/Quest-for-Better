@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { habitsAPI } from '../services/api';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
 export const useHabits = () => {
@@ -109,6 +110,34 @@ export const useHabits = () => {
 
       // Update habit stats
       await fetchHabits();
+      
+      // Check for new achievements after successful habit completion
+      if (success) {
+        try {
+          const achievementResponse = await api.post('/achievements/check');
+          const { newAchievements } = achievementResponse.data.data;
+          
+          if (newAchievements && newAchievements.length > 0) {
+            // Show celebration toast for each new achievement
+            newAchievements.forEach(achievement => {
+              toast.success(
+                `🎉 Achievement Unlocked: ${achievement.name}!`,
+                {
+                  duration: 5000,
+                  style: {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: '600'
+                  }
+                }
+              );
+            });
+          }
+        } catch (achievementError) {
+          console.error('Error checking achievements:', achievementError);
+          // Don't throw - achievements are nice-to-have, not critical
+        }
+      }
       
       toast.success(success ? 'Habit completed! 🎉' : 'Progress logged');
       return logData;
