@@ -15,7 +15,23 @@ const router = express.Router();
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const habits = await Habit.findByUserId(req.user.id);
-        successResponse(res, habits);
+        
+        // Enhance habits with current streak and stats
+        const enhancedHabits = await Promise.all(habits.map(async (habit) => {
+            const stats = await Habit.getStatistics(habit.id);
+            const currentStreak = await Habit.getCurrentStreak(habit.id);
+            
+            return {
+                ...habit,
+                current_streak: currentStreak,
+                successful_logs: stats?.successful_logs || 0,
+                total_logs: stats?.total_logs || 0,
+                points_earned: stats?.total_points_earned || 0,
+                best_streak: stats?.best_streak || 0
+            };
+        }));
+        
+        successResponse(res, enhancedHabits);
     } catch (error) {
         console.error('Fetch habits error:', error);
         errorResponse(res, 500, 'Failed to fetch habits');
@@ -26,8 +42,8 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
 router.get('/today', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const todayStatus = await Habit.getTodayStatus(req.user.id, today);
-        successResponse(res, todayStatus);
+        const todayLogs = await Habit.getTodayLogs(req.user.id, today);
+        successResponse(res, todayLogs);
     } catch (error) {
         console.error('Fetch today status error:', error);
         errorResponse(res, 500, 'Failed to fetch today\'s status');
@@ -198,9 +214,6 @@ router.delete('/:id', authenticateToken, [
 // Log habit completion
 router.post('/:id/log', authenticateToken, [
     param('id').isInt().withMessage('Habit ID must be a number'),
-    body('date')
-        .matches(/^\d{4}-\d{2}-\d{2}$/)
-        .withMessage('Date must be in YYYY-MM-DD format'),
     body('success')
         .isBoolean()
         .withMessage('Success must be a boolean value'),
@@ -212,7 +225,8 @@ router.post('/:id/log', authenticateToken, [
     handleValidationErrors
 ], asyncHandler(async (req, res) => {
     try {
-        const { date, success, notes } = req.body;
+        const { success, notes } = req.body;
+        const date = req.body.date || new Date().toISOString().split('T')[0]; // Default to today
         
         const habit = await Habit.findById(req.params.id);
         
@@ -230,9 +244,16 @@ router.post('/:id/log', authenticateToken, [
             return errorResponse(res, 400, 'Cannot log for future dates');
         }
 
-        const result = await Habit.logCompletion(req.params.id, date, success, notes || '');
+        await Habit.logCompletion(req.params.id, date, success, notes || '');
         
-        successResponse(res, result, 'Habit logged successfully');
+        // Get the updated log entry to return
+        const logEntry = await Habit.getLogByDate(req.params.id, date);
+        
+        successResponse(res, {
+            ...logEntry,
+            habit_id: parseInt(req.params.id),
+            logged_at: new Date().toISOString()
+        }, 'Habit logged successfully');
     } catch (error) {
         console.error('Log habit error:', error);
         errorResponse(res, 500, 'Failed to log habit');

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start HabitQuest Application",
+			"type": "shell",
+			"command": "cd \"c:\\~ Data\\GitHub\\Quest-for-Better\" && echo \"Starting HabitQuest Application...\" && start cmd /k \"cd backend && npm run dev\" && timeout /t 3 && start cmd /k \"cd frontend && npm start\"",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
