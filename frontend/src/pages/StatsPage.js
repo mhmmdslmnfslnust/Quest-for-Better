@@ -294,6 +294,15 @@ const Grid = styled.div`
   gap: 24px;
   margin-bottom: 24px;
   
+  /* Better responsive grid behavior */
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @media (max-width: 1199px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -303,7 +312,22 @@ const Grid = styled.div`
 const GridItem = styled.div`
   grid-column: ${props => props.$span || 'span 1'};
   
-  @media (max-width: 1200px) {
+  /* Ensure proper spanning behavior */
+  @media (min-width: 1200px) {
+    grid-column: ${props => {
+      if (props.$span === '2') return 'span 2';
+      return 'span 1';
+    }};
+  }
+  
+  @media (max-width: 1199px) {
+    grid-column: ${props => {
+      if (props.$span === '2') return 'span 2';
+      return 'span 1';
+    }};
+  }
+  
+  @media (max-width: 768px) {
     grid-column: span 1;
   }
 `;
@@ -385,7 +409,13 @@ const SafeDataWrapper = ({ children, data, fallback = null }) => {
         <EmptyState>
           <BarChart3 className="icon" />
           <h3>No Data Available</h3>
-          <p>Start tracking habits to see analytics here</p>
+          <p>Create some habits and start tracking to see analytics here</p>
+          <ActionButton 
+            onClick={() => window.location.href = '/habits'} 
+            style={{ marginTop: '12px', fontSize: '14px', padding: '8px 16px' }}
+          >
+            Go to Habits
+          </ActionButton>
         </EmptyState>
       );
     }
@@ -443,15 +473,31 @@ const StatsPage = () => {
   }
 
   if (error) {
+    const isAuthError = error.includes('401') || error.includes('unauthorized') || error.includes('token');
+    
     return (
       <PageContainer>
         <ErrorContainer>
-          <h3>Unable to Load Analytics</h3>
-          <p>{error}</p>
-          <ActionButton onClick={handleRefresh} style={{ marginTop: '16px' }}>
-            <RefreshCw size={16} />
-            Try Again
-          </ActionButton>
+          <h3>{isAuthError ? 'Please Log In' : 'Unable to Load Analytics'}</h3>
+          <p>
+            {isAuthError 
+              ? 'You need to be logged in to view your analytics dashboard. Please log in to continue.'
+              : error
+            }
+          </p>
+          {isAuthError ? (
+            <ActionButton 
+              onClick={() => window.location.href = '/login'} 
+              style={{ marginTop: '16px' }}
+            >
+              Go to Login
+            </ActionButton>
+          ) : (
+            <ActionButton onClick={handleRefresh} style={{ marginTop: '16px' }}>
+              <RefreshCw size={16} />
+              Try Again
+            </ActionButton>
+          )}
         </ErrorContainer>
       </PageContainer>
     );
