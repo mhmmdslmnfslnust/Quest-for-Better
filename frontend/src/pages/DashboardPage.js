@@ -100,9 +100,17 @@ const WelcomeCard = styled(motion.div)`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
 `;
 
 const StatCard = styled(motion.div)`
@@ -541,6 +549,56 @@ const AchievementCard = styled(motion.div)`
   }
 `;
 
+const WeeklyOverview = styled(motion.div)`
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+
+  .week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .week-title {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .week-stats {
+    font-size: 14px;
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .week-progress {
+    .week-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .week-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .week-description {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      text-align: center;
+    }
+  }
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   padding: 48px 24px;
@@ -614,11 +672,11 @@ const DashboardPage = () => {
 
   // Navigation handlers
   const handleNavigateToHabits = () => navigate('/habits');
-  const handleNavigateToAchievements = () => navigate('/achievements');
+  const handleNavigateToAchievements = () => navigate('/achievements', { state: { defaultStatus: 'earned' } });
   const handleNavigateToStats = () => navigate('/stats');
   const handleNavigateToChallenges = () => navigate('/challenges');
   const handleNavigateToHabit = (habitId) => {
-    // Navigate to habits page and could potentially scroll to specific habit
+    // Navigate to habits page with the specific habit ID to highlight
     navigate('/habits', { state: { highlightHabitId: habitId } });
   };
 
@@ -887,25 +945,50 @@ const DashboardPage = () => {
                     ? "You're crushing it today! Keep this momentum going! 🚀"
                     : todayStats.completion_rate >= 50
                     ? "Good progress! Complete 1 more habit to boost your day 💪"
+                    : userStats.current_streak > 3
+                    ? `${userStats.current_streak}-day streak! You're building amazing consistency! 🔥`
                     : "Every journey starts with a single step. You've got this! 🌟"
                   }
                 </div>
               </div>
             </InsightCard>
 
+            <WeeklyOverview
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
+              <div className="week-header">
+                <div className="week-title">This Week</div>
+                <div className="week-stats">{weekStats.success_rate || 0}% success</div>
+              </div>
+              <div className="week-progress">
+                <div className="week-bar">
+                  <div className="week-fill" style={{
+                    width: `${weekStats.success_rate || 0}%`
+                  }}></div>
+                </div>
+                <div className="week-description">
+                  {weekStats.success_rate >= 80 ? 'Outstanding week! 🌟' : 
+                   weekStats.success_rate >= 60 ? 'Great consistency! 💪' : 
+                   'Keep building momentum! 🚀'}
+                </div>
+              </div>
+            </WeeklyOverview>
+
             {stats.achievements_count > 0 && (
               <AchievementCard
                 onClick={handleNavigateToAchievements}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <div className="achievement-icon">
                   <Trophy size={24} />
                 </div>
                 <div className="achievement-content">
-                  <div className="achievement-title">Achievements Earned</div>
-                  <div className="achievement-name">{stats.achievements_count} badges unlocked!</div>
+                  <div className="achievement-title">Latest Achievement!</div>
+                  <div className="achievement-name">🏆 {stats.achievements_count} badges earned!</div>
                 </div>
               </AchievementCard>
             )}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { Target, Plus, AlertCircle, Loader } from 'lucide-react';
 import { useHabits } from '../hooks/useHabits';
@@ -146,6 +147,9 @@ const LoadingContainer = styled.div`
 `;
 
 const HabitsPage = () => {
+  const location = useLocation();
+  const habitRefs = useRef({});
+  
   const {
     habits,
     loading,
@@ -163,6 +167,7 @@ const HabitsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [view, setView] = useState('grid');
+  const [highlightedHabitId, setHighlightedHabitId] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
@@ -170,6 +175,36 @@ const HabitsPage = () => {
     status: 'all',
     sort: 'created_desc'
   });
+
+  // Handle highlighting habit from navigation state
+  useEffect(() => {
+    const highlightId = location.state?.highlightHabitId;
+    if (highlightId && habits.length > 0) {
+      setHighlightedHabitId(highlightId);
+      
+      // Scroll to the highlighted habit after a short delay
+      const timer = setTimeout(() => {
+        const habitElement = habitRefs.current[highlightId];
+        if (habitElement) {
+          habitElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 300);
+
+      // Clear highlight after 3 seconds
+      const clearTimer = setTimeout(() => {
+        setHighlightedHabitId(null);
+      }, 3500);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [location.state, habits]);
 
   // Filter and sort habits
   const filteredHabits = useMemo(() => {
@@ -366,11 +401,13 @@ const HabitsPage = () => {
           {filteredHabits.map(habit => (
             <HabitCard
               key={habit.id}
+              ref={el => habitRefs.current[habit.id] = el}
               habit={habit}
               stats={getHabitStats(habit)}
               onEdit={handleEditHabit}
               onDelete={handleDeleteHabit}
               isCompletedToday={isHabitCompletedToday(habit.id)}
+              isHighlighted={highlightedHabitId === habit.id}
             >
               <HabitTrackingButton
                 habit={habit}
