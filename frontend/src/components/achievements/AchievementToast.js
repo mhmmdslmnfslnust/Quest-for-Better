@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { motion } from 'framer-motion';
 import { Award, Sparkles } from 'lucide-react';
 
@@ -27,7 +27,10 @@ const Container = styled(motion.div)`
   position: relative;
   overflow: hidden;
   min-width: 300px;
-  animation: ${celebrationAnimation} 0.6s ease-out;
+  
+  ${css`
+    animation: ${celebrationAnimation} 0.6s ease-out;
+  `}
 `;
 
 const Header = styled.div`
@@ -79,7 +82,10 @@ const Points = styled.div`
 const Sparkle = styled(Sparkles)`
   position: absolute;
   color: rgba(255, 255, 255, 0.6);
-  animation: ${sparkleAnimation} 2s infinite;
+  
+  ${css`
+    animation: ${sparkleAnimation} 2s infinite;
+  `}
   
   &:nth-child(1) {
     top: 10px;

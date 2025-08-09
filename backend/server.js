@@ -12,6 +12,7 @@ const habitRoutes = require('./routes/habits');
 const achievementRoutes = require('./routes/achievements');
 const challengeRoutes = require('./routes/challenges');
 const statsRoutes = require('./routes/stats');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,6 +52,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
