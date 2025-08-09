@@ -219,6 +219,39 @@ class Habit {
         return await db.query(sql, [userId, date]);
     }
 
+    // Get today's habits with completion status for user (for dashboard)
+    static async getTodayHabitsStatus(userId, date) {
+        const sql = `
+            SELECT h.id, h.name, h.description, h.category, h.type, h.difficulty,
+                   h.color, h.icon, h.points_per_success,
+                   CASE WHEN hl.success IS NOT NULL THEN 1 ELSE 0 END as logged_today,
+                   COALESCE(hl.success, 0) as completed_today,
+                   COALESCE(hl.points_earned, 0) as points_today,
+                   hl.notes as today_notes
+            FROM habits h
+            LEFT JOIN habit_logs hl ON h.id = hl.habit_id AND hl.date = ?
+            WHERE h.user_id = ? AND h.is_active = 1
+            ORDER BY h.created_at DESC
+        `;
+        
+        return await db.query(sql, [date, userId]);
+    }
+
+    // Get today's habit logs for user (for useHabits hook compatibility)
+    static async getTodayLogsForHabits(userId, date) {
+        const sql = `
+            SELECT hl.id, hl.habit_id, hl.date, hl.success, hl.notes, 
+                   hl.points_earned, hl.streak_day, hl.logged_at,
+                   h.name as habit_name
+            FROM habit_logs hl
+            JOIN habits h ON hl.habit_id = h.id
+            WHERE h.user_id = ? AND hl.date = ? AND h.is_active = 1
+            ORDER BY hl.logged_at DESC
+        `;
+        
+        return await db.query(sql, [userId, date]);
+    }
+
     // Get current streak for a habit
     static async getCurrentStreak(habitId) {
         const today = new Date().toISOString().split('T')[0];

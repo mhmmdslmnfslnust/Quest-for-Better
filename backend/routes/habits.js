@@ -42,8 +42,20 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
 router.get('/today', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const todayLogs = await Habit.getTodayLogs(req.user.id, today);
+        const todayLogs = await Habit.getTodayLogsForHabits(req.user.id, today);
         successResponse(res, todayLogs);
+    } catch (error) {
+        console.error('Fetch today status error:', error);
+        errorResponse(res, 500, 'Failed to fetch today\'s status');
+    }
+}));
+
+// Get today's habits with completion status (for dashboard)
+router.get('/today-status', authenticateToken, asyncHandler(async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const todayHabits = await Habit.getTodayHabitsStatus(req.user.id, today);
+        successResponse(res, todayHabits);
     } catch (error) {
         console.error('Fetch today status error:', error);
         errorResponse(res, 500, 'Failed to fetch today\'s status');
