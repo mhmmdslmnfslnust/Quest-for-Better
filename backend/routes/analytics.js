@@ -133,6 +133,7 @@ router.get('/overview', authenticateToken, asyncHandler(async (req, res) => {
 router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.id;
+        const { month } = req.query; // Optional month filter (format: YYYY-MM)
         
         // Get user join date to determine effective analysis period
         const userStats = await db.get(`
@@ -217,18 +218,41 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             ORDER BY sort_key
         `, [userId, effectiveMonthsPeriod]);
         
+        // Daily breakdown for specific month if requested
+        let dailyBreakdown = null;
+        if (month) {
+            dailyBreakdown = await db.query(`
+                SELECT 
+                    strftime('%d', hl.date) as day,
+                    hl.date,
+                    COUNT(*) as total_habits,
+                    SUM(CASE WHEN hl.success = 1 THEN 1 ELSE 0 END) as completed_habits,
+                    ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) as success_rate,
+                    SUM(hl.points_earned) as points_earned
+                FROM habit_logs hl
+                JOIN habits h ON hl.habit_id = h.id
+                WHERE h.user_id = ?
+                AND strftime('%Y-%m', hl.date) = ?
+                GROUP BY hl.date
+                ORDER BY hl.date
+            `, [userId, month]);
+        }
+        
         successResponse(res, {
             daily_patterns: dailyPatterns,
             hourly_patterns: hourlyPatterns,
             monthly_progression: monthlyProgression,
+            daily_breakdown: dailyBreakdown,
             analysis_period: {
                 days_since_join: daysSinceJoin,
                 effective_days_period: effectivePatternPeriod,
-                effective_months_period: effectiveMonthsPeriod
+                effective_months_period: effectiveMonthsPeriod,
+                selected_month: month
             },
             debug_info: {
                 monthly_progression_count: monthlyProgression.length,
                 daily_patterns_count: dailyPatterns.length,
+                daily_breakdown_count: dailyBreakdown ? dailyBreakdown.length : 0,
                 user_id: userId
             }
         });

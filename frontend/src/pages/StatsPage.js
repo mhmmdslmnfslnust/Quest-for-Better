@@ -11,6 +11,10 @@ import DonutChart from '../components/analytics/DonutChart';
 import WellnessScore from '../components/analytics/WellnessScore';
 import PatternHeatmap from '../components/analytics/PatternHeatmap';
 import SmartInsights from '../components/analytics/SmartInsights';
+import MonthlyProgressChart from '../components/analytics/MonthlyProgressChart';
+import CalendarChart from '../components/analytics/CalendarChart';
+import WeeklyCalendar from '../components/analytics/WeeklyCalendar';
+import MonthlyCalendar from '../components/analytics/MonthlyCalendar';
 
 const PageContainer = styled.div`
   max-width: 1400px;
@@ -444,7 +448,8 @@ const StatsPage = () => {
     community, 
     loading, 
     error, 
-    fetchAnalytics 
+    fetchAnalytics,
+    fetchDailyData
   } = useAnalytics();
 
   const handleRefresh = async () => {
@@ -643,10 +648,11 @@ const StatsPage = () => {
           <SafeDataWrapper data={patterns} navigate={navigate}>
             <Grid>
               <GridItem $span="2">
-                <SafeDataWrapper data={patterns?.daily_patterns} navigate={navigate}>
-                  <PatternHeatmap 
-                    data={patterns?.daily_patterns} 
-                    title="Daily Success Patterns"
+                <SafeDataWrapper data={patterns} navigate={navigate}>
+                  <MonthlyCalendar 
+                    data={patterns?.monthly_progression} 
+                    title="Daily Success Calendar"
+                    onFetchDailyData={fetchDailyData}
                   />
                 </SafeDataWrapper>
               </GridItem>
