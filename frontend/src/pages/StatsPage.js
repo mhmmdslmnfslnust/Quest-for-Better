@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { TrendingUp, BarChart3, Calendar, Brain, Award, Users, RefreshCw, Filter, Download, Activity, Target, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useAnalytics from '../hooks/useAnalytics';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -278,7 +279,6 @@ const fadeInUp = keyframes`
 `;
 
 const TabContent = styled.div`
-  display: ${props => props.$active ? 'block' : 'none'};
   ${props => props.$active && css`
     animation: ${fadeInUp} 0.5s ease-out;
   `}
@@ -290,17 +290,20 @@ const TabContent = styled.div`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(${props => props.$minWidth || '400px'}, 1fr));
   gap: 24px;
   margin-bottom: 24px;
   
-  /* Better responsive grid behavior */
+  /* More flexible grid system */
+  grid-template-columns: repeat(auto-fit, minmax(${props => props.$minWidth || '350px'}, 1fr));
+  
+  /* Responsive grid behavior that prevents layout issues */
   @media (min-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr);
+    /* Allow more flexible column sizing to prevent spanning issues */
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   }
   
-  @media (max-width: 1199px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 1199px) and (min-width: 769px) {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   }
   
   @media (max-width: 768px) {
@@ -310,26 +313,22 @@ const Grid = styled.div`
 `;
 
 const GridItem = styled.div`
-  grid-column: ${props => props.$span || 'span 1'};
+  /* More predictable spanning behavior */
+  grid-column: ${props => {
+    if (props.$span === '2') {
+      return 'span 2';
+    }
+    return 'span 1';
+  }};
   
-  /* Ensure proper spanning behavior */
-  @media (min-width: 1200px) {
-    grid-column: ${props => {
-      if (props.$span === '2') return 'span 2';
-      return 'span 1';
-    }};
-  }
-  
-  @media (max-width: 1199px) {
-    grid-column: ${props => {
-      if (props.$span === '2') return 'span 2';
-      return 'span 1';
-    }};
-  }
-  
+  /* Ensure items don't break the layout on smaller screens */
   @media (max-width: 768px) {
     grid-column: span 1;
   }
+  
+  /* Prevent overflow and ensure proper rendering */
+  min-width: 0;
+  overflow: hidden;
 `;
 
 const ErrorContainer = styled.div`
@@ -402,7 +401,7 @@ const EmptyState = styled.div`
 `;
 
 // Safe data wrapper for preventing null/undefined errors
-const SafeDataWrapper = ({ children, data, fallback = null }) => {
+const SafeDataWrapper = ({ children, data, fallback = null, navigate = null }) => {
   try {
     if (!data || (Array.isArray(data) && data.length === 0)) {
       return fallback || (
@@ -411,7 +410,7 @@ const SafeDataWrapper = ({ children, data, fallback = null }) => {
           <h3>No Data Available</h3>
           <p>Create some habits and start tracking to see analytics here</p>
           <ActionButton 
-            onClick={() => window.location.href = '/habits'} 
+            onClick={() => navigate ? navigate('/habits') : window.location.href = '/habits'} 
             style={{ marginTop: '12px', fontSize: '14px', padding: '8px 16px' }}
           >
             Go to Habits
@@ -433,6 +432,7 @@ const SafeDataWrapper = ({ children, data, fallback = null }) => {
 };
 
 const StatsPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { 
@@ -487,7 +487,7 @@ const StatsPage = () => {
           </p>
           {isAuthError ? (
             <ActionButton 
-              onClick={() => window.location.href = '/login'} 
+              onClick={() => navigate('/login')} 
               style={{ marginTop: '16px' }}
             >
               Go to Login
@@ -534,20 +534,20 @@ const StatsPage = () => {
           </HeaderContent>
         </Header>
 
-      {/* Quick Stats Cards */}
+      {/* Quick Stats Cards - Overview Summary */}
       <QuickStatsGrid>
         <QuickStatCard $color="linear-gradient(90deg, #10b981, #059669)">
           <QuickStatHeader>
-            <QuickStatTitle>Wellness Score</QuickStatTitle>
+            <QuickStatTitle>Overall Wellness</QuickStatTitle>
             <QuickStatIcon $bgColor="rgba(16, 185, 129, 0.1)" $iconColor="#10b981">
               <Activity size={20} />
             </QuickStatIcon>
           </QuickStatHeader>
-          <QuickStatValue>{overview?.wellness_score || 0}</QuickStatValue>
+          <QuickStatValue>{overview?.wellness_score || 0}%</QuickStatValue>
           <QuickStatSubtext>
-            {overview?.wellness_score >= 80 ? 'Excellent' : 
-             overview?.wellness_score >= 60 ? 'Good' : 
-             overview?.wellness_score >= 40 ? 'Fair' : 'Needs Improvement'}
+            {overview?.wellness_score >= 80 ? 'Excellent Performance' : 
+             overview?.wellness_score >= 60 ? 'Good Progress' : 
+             overview?.wellness_score >= 40 ? 'Building Momentum' : 'Getting Started'}
           </QuickStatSubtext>
         </QuickStatCard>
 
@@ -564,24 +564,24 @@ const StatsPage = () => {
 
         <QuickStatCard $color="linear-gradient(90deg, #8b5cf6, #7c3aed)">
           <QuickStatHeader>
-            <QuickStatTitle>Active Days</QuickStatTitle>
+            <QuickStatTitle>Consistency</QuickStatTitle>
             <QuickStatIcon $bgColor="rgba(139, 92, 246, 0.1)" $iconColor="#8b5cf6">
               <Calendar size={20} />
             </QuickStatIcon>
           </QuickStatHeader>
-          <QuickStatValue>{overview?.insights?.active_days || 0}</QuickStatValue>
-          <QuickStatSubtext>Out of {overview?.insights?.total_days || 30} days</QuickStatSubtext>
+          <QuickStatValue>{overview?.insights?.active_days || 0}/{overview?.insights?.total_days || 30}</QuickStatValue>
+          <QuickStatSubtext>Active tracking days</QuickStatSubtext>
         </QuickStatCard>
 
         <QuickStatCard $color="linear-gradient(90deg, #f59e0b, #d97706)">
           <QuickStatHeader>
-            <QuickStatTitle>Total Points</QuickStatTitle>
+            <QuickStatTitle>Achievement Level</QuickStatTitle>
             <QuickStatIcon $bgColor="rgba(245, 158, 11, 0.1)" $iconColor="#f59e0b">
               <Zap size={20} />
             </QuickStatIcon>
           </QuickStatHeader>
-          <QuickStatValue>{overview?.user_stats?.total_points || 0}</QuickStatValue>
-          <QuickStatSubtext>Level {overview?.user_stats?.level || 1} Adventurer</QuickStatSubtext>
+          <QuickStatValue>Lv.{overview?.user_stats?.level || 1}</QuickStatValue>
+          <QuickStatSubtext>{overview?.user_stats?.total_points || 0} total points</QuickStatSubtext>
         </QuickStatCard>
       </QuickStatsGrid>
 
@@ -599,135 +599,149 @@ const StatsPage = () => {
         ))}
       </TabContainer>
 
-      {/* Tab Content */}
-      <TabContent $active={activeTab === 'overview'}>
-        <SafeDataWrapper data={overview}>
-          <Grid $minWidth="350px">
-            <GridItem $span="2">
-              <SafeDataWrapper data={overview?.performance_trend}>
-                <TrendChart data={overview?.performance_trend} title="Performance Trend" />
-              </SafeDataWrapper>
-            </GridItem>
-            <GridItem>
-              <WellnessScore score={overview?.wellness_score || 0} />
-            </GridItem>
-            <GridItem>
-              <SafeDataWrapper data={overview?.category_performance}>
-                <DonutChart 
-                  data={overview?.category_performance} 
-                  title="Category Performance"
-                  dataKey="success_rate"
-                  nameKey="category"
+      {/* Tab Content - Conditional Rendering for Better Performance */}
+      {activeTab === 'overview' && (
+        <TabContent $active={true}>
+          <SafeDataWrapper data={overview} navigate={navigate}>
+            <Grid $minWidth="350px">
+              <GridItem $span="2">
+                <SafeDataWrapper data={overview?.performance_trend} navigate={navigate}>
+                  <TrendChart data={overview?.performance_trend} title="Performance Trend" />
+                </SafeDataWrapper>
+              </GridItem>
+              <GridItem>
+                <WellnessScore 
+                  score={overview?.wellness_score || 0} 
+                  title="Personal Wellness"
                 />
-              </SafeDataWrapper>
-            </GridItem>
-            <GridItem $span="2">
-              <SafeDataWrapper data={overview?.top_habits}>
-                <PerformanceBarChart 
-                  data={overview?.top_habits} 
-                  title="Top Performing Habits"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-          </Grid>
-        </SafeDataWrapper>
-      </TabContent>
+              </GridItem>
+              <GridItem>
+                <SafeDataWrapper data={overview?.category_performance} navigate={navigate}>
+                  <DonutChart 
+                    data={overview?.category_performance} 
+                    title="Category Performance"
+                    dataKey="success_rate"
+                    nameKey="category"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+              <GridItem $span="2">
+                <SafeDataWrapper data={overview?.top_habits} navigate={navigate}>
+                  <PerformanceBarChart 
+                    data={overview?.top_habits} 
+                    title="Top Performing Habits"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+            </Grid>
+          </SafeDataWrapper>
+        </TabContent>
+      )}
 
-      <TabContent $active={activeTab === 'patterns'}>
-        <SafeDataWrapper data={patterns}>
-          <Grid>
-            <GridItem $span="2">
-              <SafeDataWrapper data={patterns?.daily_patterns}>
-                <PatternHeatmap 
-                  data={patterns?.daily_patterns} 
-                  title="Daily Success Patterns"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-            <GridItem>
-              <SafeDataWrapper data={patterns?.monthly_progression}>
-                <DonutChart 
-                  data={patterns?.monthly_progression} 
-                  title="Monthly Progress"
-                  dataKey="success_rate"
-                  nameKey="month"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-          </Grid>
-        </SafeDataWrapper>
-      </TabContent>
+      {activeTab === 'patterns' && (
+        <TabContent $active={true}>
+          <SafeDataWrapper data={patterns} navigate={navigate}>
+            <Grid>
+              <GridItem $span="2">
+                <SafeDataWrapper data={patterns?.daily_patterns} navigate={navigate}>
+                  <PatternHeatmap 
+                    data={patterns?.daily_patterns} 
+                    title="Daily Success Patterns"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+              <GridItem>
+                <SafeDataWrapper data={patterns?.monthly_progression} navigate={navigate}>
+                  <DonutChart 
+                    data={patterns?.monthly_progression} 
+                    title="Monthly Progress"
+                    dataKey="success_rate"
+                    nameKey="month"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+            </Grid>
+          </SafeDataWrapper>
+        </TabContent>
+      )}
 
-      <TabContent $active={activeTab === 'insights'}>
-        <SafeDataWrapper data={predictions || correlations}>
-          <Grid>
-            <GridItem $span="2">
-              <SmartInsights 
-                predictions={predictions}
-                correlations={correlations}
-              />
-            </GridItem>
-          </Grid>
-        </SafeDataWrapper>
-      </TabContent>
+      {activeTab === 'insights' && (
+        <TabContent $active={true}>
+          <SafeDataWrapper data={predictions || correlations} navigate={navigate}>
+            <Grid>
+              <GridItem $span="2">
+                <SmartInsights 
+                  predictions={predictions}
+                  correlations={correlations}
+                />
+              </GridItem>
+            </Grid>
+          </SafeDataWrapper>
+        </TabContent>
+      )}
 
-      <TabContent $active={activeTab === 'achievements'}>
-        <SafeDataWrapper data={achievements}>
-          <Grid>
-            <GridItem>
-              <SafeDataWrapper data={achievements?.rarity_breakdown}>
-                <DonutChart 
-                  data={achievements?.rarity_breakdown} 
-                  title="Achievement Rarity"
-                  dataKey="completion_rate"
-                  nameKey="rarity"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-            <GridItem>
-              <SafeDataWrapper data={achievements?.category_breakdown}>
-                <DonutChart 
-                  data={achievements?.category_breakdown} 
-                  title="Category Completion"
-                  dataKey="completion_rate"
-                  nameKey="category"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-            <GridItem $span="2">
-              <SafeDataWrapper data={achievements?.next_achievements}>
-                <PerformanceBarChart 
-                  data={achievements?.next_achievements} 
-                  title="Next Achievements"
-                />
-              </SafeDataWrapper>
-            </GridItem>
-          </Grid>
-        </SafeDataWrapper>
-      </TabContent>
+      {activeTab === 'achievements' && (
+        <TabContent $active={true}>
+          <SafeDataWrapper data={achievements} navigate={navigate}>
+            <Grid>
+              <GridItem>
+                <SafeDataWrapper data={achievements?.rarity_breakdown} navigate={navigate}>
+                  <DonutChart 
+                    data={achievements?.rarity_breakdown} 
+                    title="Achievement Rarity"
+                    dataKey="completion_rate"
+                    nameKey="rarity"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+              <GridItem>
+                <SafeDataWrapper data={achievements?.category_breakdown} navigate={navigate}>
+                  <DonutChart 
+                    data={achievements?.category_breakdown} 
+                    title="Category Completion"
+                    dataKey="completion_rate"
+                    nameKey="category"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+              <GridItem $span="2">
+                <SafeDataWrapper data={achievements?.next_achievements} navigate={navigate}>
+                  <PerformanceBarChart 
+                    data={achievements?.next_achievements} 
+                    title="Next Achievements"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+            </Grid>
+          </SafeDataWrapper>
+        </TabContent>
+      )}
 
-      <TabContent $active={activeTab === 'community'}>
-        <SafeDataWrapper data={community}>
-          <Grid>
-            <GridItem>
-              <WellnessScore 
-                score={community?.user_rankings?.points_percentile || 0} 
-                title="Community Ranking"
-              />
-            </GridItem>
-            <GridItem>
-              <SafeDataWrapper data={community?.category_comparison}>
-                <DonutChart 
-                  data={community?.category_comparison} 
-                  title="Category vs Community"
-                  dataKey="user_success_rate"
-                  nameKey="category"
+      {activeTab === 'community' && (
+        <TabContent $active={true}>
+          <SafeDataWrapper data={community} navigate={navigate}>
+            <Grid>
+              <GridItem>
+                <WellnessScore 
+                  score={community?.user_rankings?.points_percentile || 0} 
+                  title="Community Ranking"
+                  subtitle="Your percentile among all users"
                 />
-              </SafeDataWrapper>
-            </GridItem>
-          </Grid>
-        </SafeDataWrapper>
-      </TabContent>
+              </GridItem>
+              <GridItem>
+                <SafeDataWrapper data={community?.category_comparison} navigate={navigate}>
+                  <DonutChart 
+                    data={community?.category_comparison} 
+                    title="Category vs Community"
+                    dataKey="user_success_rate"
+                    nameKey="category"
+                  />
+                </SafeDataWrapper>
+              </GridItem>
+            </Grid>
+          </SafeDataWrapper>
+        </TabContent>
+      )}
       </PageContainer>
     </ErrorBoundary>
   );

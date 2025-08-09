@@ -129,7 +129,7 @@ const InsightItem = styled.div`
   text-align: left;
 `;
 
-const WellnessScore = ({ score, insights = [] }) => {
+const WellnessScore = ({ score, insights = [], title = "Wellness Score", subtitle = null }) => {
   const getScoreMessage = (score) => {
     if (score >= 90) return "Outstanding! You're crushing your wellness goals! 🌟";
     if (score >= 70) return "Great work! Your consistency is paying off! 🎯";
@@ -143,8 +143,14 @@ const WellnessScore = ({ score, insights = [] }) => {
   return (
     <ScoreContainer $isExcellent={score >= 90}>
       <ScoreTitle>
-        🏆 Wellness Score
+        🏆 {title}
       </ScoreTitle>
+      
+      {subtitle && (
+        <ScoreDescription style={{ marginBottom: '16px', fontSize: '12px' }}>
+          {subtitle}
+        </ScoreDescription>
+      )}
       
       <ProgressRing $score={score}>
         <svg>
