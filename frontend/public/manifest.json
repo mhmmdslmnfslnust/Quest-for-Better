@@ -3,19 +3,14 @@
   "name": "HabitQuest - Gamified Wellness App",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%236366f1'/%3E%3Cpath d='M8 16c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8-8-3.59-8-8z' fill='white'/%3E%3Cpath d='M14 14l2 2 2-2' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 12v4M16 16v4' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='20' r='1' fill='%236366f1'/%3E%3C/svg%3E",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
+      "src": "logo.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
     }
   ],
   "start_url": ".",

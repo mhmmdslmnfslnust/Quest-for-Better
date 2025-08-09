@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { Trophy, Zap, CheckCircle } from 'lucide-react';
 
 const slideIn = keyframes`
@@ -24,9 +24,12 @@ const ToastContainer = styled.div`
   border-radius: 16px;
   color: var(--color-text-primary);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  animation: ${slideIn} 0.3s ease;
   max-width: 400px;
   min-width: 300px;
+  
+  ${css`
+    animation: ${slideIn} 0.3s ease;
+  `}
 `;
 
 const IconContainer = styled.div`
