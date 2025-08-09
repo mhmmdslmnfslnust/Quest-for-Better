@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Trophy, Award, Target, TrendingUp } from 'lucide-react';
@@ -89,6 +90,7 @@ const FilterSection = styled.div`
 `;
 
 const AchievementsPage = () => {
+  const location = useLocation();
   const {
     filteredAchievements,
     categories,
@@ -102,6 +104,13 @@ const AchievementsPage = () => {
   } = useAchievements();
 
   const [selectedAchievement, setSelectedAchievement] = useState(null);
+
+  // Handle navigation state to pre-select earned achievements
+  useEffect(() => {
+    if (location.state?.defaultStatus && location.state.defaultStatus !== selectedStatus) {
+      setSelectedStatus(location.state.defaultStatus);
+    }
+  }, [location.state, selectedStatus, setSelectedStatus]);
 
   const handleAchievementClick = (achievement) => {
     setSelectedAchievement(achievement);
