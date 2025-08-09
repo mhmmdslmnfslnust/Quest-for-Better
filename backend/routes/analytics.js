@@ -186,11 +186,25 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             ORDER BY hour
         `, [userId, effectivePatternPeriod]);
         
-        // Monthly progression - use effective period for months too
+        // Monthly progression - use effective period for months too with better formatting
         const effectiveMonthsPeriod = Math.min(12, Math.ceil(daysSinceJoin / 30));
         const monthlyProgression = await db.query(`
             SELECT 
-                strftime('%Y-%m', hl.date) as month,
+                CASE strftime('%m', hl.date)
+                    WHEN '01' THEN 'Jan ' || strftime('%Y', hl.date)
+                    WHEN '02' THEN 'Feb ' || strftime('%Y', hl.date)
+                    WHEN '03' THEN 'Mar ' || strftime('%Y', hl.date)
+                    WHEN '04' THEN 'Apr ' || strftime('%Y', hl.date)
+                    WHEN '05' THEN 'May ' || strftime('%Y', hl.date)
+                    WHEN '06' THEN 'Jun ' || strftime('%Y', hl.date)
+                    WHEN '07' THEN 'Jul ' || strftime('%Y', hl.date)
+                    WHEN '08' THEN 'Aug ' || strftime('%Y', hl.date)
+                    WHEN '09' THEN 'Sep ' || strftime('%Y', hl.date)
+                    WHEN '10' THEN 'Oct ' || strftime('%Y', hl.date)
+                    WHEN '11' THEN 'Nov ' || strftime('%Y', hl.date)
+                    WHEN '12' THEN 'Dec ' || strftime('%Y', hl.date)
+                END as month,
+                strftime('%Y-%m', hl.date) as sort_key,
                 COUNT(*) as total_logs,
                 SUM(CASE WHEN hl.success = 1 THEN 1 ELSE 0 END) as successful_logs,
                 ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) as success_rate,
@@ -200,7 +214,7 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             WHERE h.user_id = ?
             AND hl.date >= date('now', '-' || ? || ' months')
             GROUP BY strftime('%Y-%m', hl.date)
-            ORDER BY month
+            ORDER BY sort_key
         `, [userId, effectiveMonthsPeriod]);
         
         successResponse(res, {
@@ -211,6 +225,11 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
                 days_since_join: daysSinceJoin,
                 effective_days_period: effectivePatternPeriod,
                 effective_months_period: effectiveMonthsPeriod
+            },
+            debug_info: {
+                monthly_progression_count: monthlyProgression.length,
+                daily_patterns_count: dailyPatterns.length,
+                user_id: userId
             }
         });
         
@@ -468,7 +487,7 @@ router.get('/community', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.id;
         
-        // Simple ranking calculation
+        // Simple ranking calculation with proper percentiles
         const userRankings = await db.get(`
             SELECT 
                 u.id,
@@ -477,43 +496,72 @@ router.get('/community', authenticateToken, asyncHandler(async (req, res) => {
                 COALESCE(us.longest_streak, 0) as longest_streak,
                 (SELECT COUNT(*) FROM user_achievements WHERE user_id = u.id) as achievement_count,
                 (SELECT COUNT(*) + 1 FROM users u2 WHERE u2.total_points > u.total_points) as points_rank,
+                (SELECT COUNT(*) + 1 FROM users u2 
+                 LEFT JOIN user_stats us2 ON u2.id = us2.user_id 
+                 WHERE COALESCE(us2.current_streak, 0) > COALESCE(us.current_streak, 0)) as streak_rank,
+                (SELECT COUNT(*) + 1 FROM users u2 
+                 WHERE (SELECT COUNT(*) FROM user_achievements ua2 WHERE ua2.user_id = u2.id) > 
+                       (SELECT COUNT(*) FROM user_achievements ua WHERE ua.user_id = u.id)) as achievement_rank,
                 (SELECT COUNT(*) FROM users) as total_count
             FROM users u
             LEFT JOIN user_stats us ON u.id = us.user_id
             WHERE u.id = ?
         `, [userId]);
         
-        // Calculate percentiles
+        // Calculate actual percentiles for all metrics
         if (userRankings) {
             userRankings.points_percentile = Math.round((userRankings.total_count - userRankings.points_rank + 1) * 100.0 / userRankings.total_count);
-            userRankings.streak_percentile = 75; // Simplified for now
-            userRankings.achievement_percentile = 80; // Simplified for now
+            userRankings.streak_percentile = Math.round((userRankings.total_count - userRankings.streak_rank + 1) * 100.0 / userRankings.total_count);
+            userRankings.achievement_percentile = Math.round((userRankings.total_count - userRankings.achievement_rank + 1) * 100.0 / userRankings.total_count);
         }
         
-        // Get community averages for comparison
+        // Get actual community averages for comparison
         const communityAverages = await db.get(`
             SELECT 
                 ROUND(AVG(u.total_points), 0) as avg_points,
                 ROUND(AVG(COALESCE(us.current_streak, 0)), 1) as avg_current_streak,
                 ROUND(AVG(COALESCE(us.longest_streak, 0)), 1) as avg_longest_streak,
-                2.5 as avg_achievements
+                ROUND(AVG(achievement_counts.count), 1) as avg_achievements
             FROM users u
             LEFT JOIN user_stats us ON u.id = us.user_id
+            LEFT JOIN (
+                SELECT user_id, COUNT(*) as count 
+                FROM user_achievements 
+                GROUP BY user_id
+            ) achievement_counts ON u.id = achievement_counts.user_id
         `);
         
-        // Get category comparison with community (simplified)
+        // Get category comparison with actual community averages
         const categoryComparison = await db.query(`
+            WITH user_category_stats AS (
+                SELECT 
+                    h.category,
+                    COUNT(DISTINCT h.id) as user_habit_count,
+                    ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) as user_success_rate
+                FROM habits h
+                LEFT JOIN habit_logs hl ON h.id = hl.habit_id 
+                    AND hl.date >= date('now', '-30 days')
+                WHERE h.user_id = ? AND h.is_active = 1
+                GROUP BY h.category
+            ),
+            community_category_stats AS (
+                SELECT 
+                    h.category,
+                    ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) as community_avg_success_rate
+                FROM habits h
+                LEFT JOIN habit_logs hl ON h.id = hl.habit_id 
+                    AND hl.date >= date('now', '-30 days')
+                WHERE h.is_active = 1
+                GROUP BY h.category
+            )
             SELECT 
-                h.category,
-                COUNT(DISTINCT h.id) as user_habit_count,
-                ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) as user_success_rate,
-                70 as community_avg_success_rate,
-                ROUND(AVG(CASE WHEN hl.success = 1 THEN 1.0 ELSE 0.0 END) * 100, 1) - 70 as difference_from_average
-            FROM habits h
-            LEFT JOIN habit_logs hl ON h.id = hl.habit_id 
-                AND hl.date >= date('now', '-30 days')
-            WHERE h.user_id = ? AND h.is_active = 1
-            GROUP BY h.category
+                ucs.category,
+                ucs.user_habit_count,
+                ucs.user_success_rate,
+                COALESCE(ccs.community_avg_success_rate, 70) as community_avg_success_rate,
+                ucs.user_success_rate - COALESCE(ccs.community_avg_success_rate, 70) as difference_from_average
+            FROM user_category_stats ucs
+            LEFT JOIN community_category_stats ccs ON ucs.category = ccs.category
             ORDER BY difference_from_average DESC
         `, [userId]);
         
