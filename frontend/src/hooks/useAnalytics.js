@@ -47,6 +47,17 @@ const useAnalytics = () => {
     }
   };
 
+  // Fetch daily data for specific month
+  const fetchDailyData = async (month) => {
+    try {
+      const response = await api.get(`/analytics/patterns?month=${month}`);
+      return response?.daily_breakdown || [];
+    } catch (err) {
+      console.error('Error fetching daily data:', err);
+      return [];
+    }
+  };
+
   // Generate smart insights from the data
   const generateInsights = () => {
     if (!overview || !patterns || !predictions) return [];
@@ -130,7 +141,8 @@ const useAnalytics = () => {
     achievements,
     community,
     insights: generateInsights(),
-    refreshAnalytics: fetchAnalytics
+    fetchAnalytics,
+    fetchDailyData
   };
 };
 
