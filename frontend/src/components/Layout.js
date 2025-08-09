@@ -252,7 +252,19 @@ const UserInfo = styled.div`
   border-radius: 12px;
   margin-bottom: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 
   .avatar {
     width: ${props => props.$width < 260 ? '36px' : '48px'};
@@ -267,6 +279,7 @@ const UserInfo = styled.div`
     font-weight: 600;
     color: white;
     flex-shrink: 0;
+    transition: all 0.2s ease;
   }
 
   .info {
@@ -277,9 +290,23 @@ const UserInfo = styled.div`
       font-weight: 600;
       font-size: ${props => props.$width < 260 ? '14px' : '16px'};
       margin-bottom: ${props => props.$width < 260 ? '0px' : '4px'};
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      line-height: 1.4;
+      
+      /* Truncated by default */
+      ${props => !props.$nameExpanded && `
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      `}
+      
+      /* Expanded state - multi-line */
+      ${props => props.$nameExpanded && `
+        white-space: normal;
+        word-break: break-word;
+        max-height: none;
+      `}
     }
     
     .level {
@@ -292,6 +319,23 @@ const UserInfo = styled.div`
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+  }
+
+  /* Click indicator */
+  &::after {
+    content: '${props => props.$nameExpanded ? '▼' : '▶'}';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+
+  &:hover::after {
+    opacity: 0.8;
   }
 `;
 
@@ -419,6 +463,7 @@ const Layout = ({ children }) => {
   const [sidebarWidth, setSidebarWidth] = useState(280); // Desktop width
   const [isResizing, setIsResizing] = useState(false);
   const [showWidthIndicator, setShowWidthIndicator] = useState(false);
+  const [nameExpanded, setNameExpanded] = useState(false); // Name expansion toggle
   
   // Refs for resize functionality
   const sidebarRef = useRef(null);
@@ -532,6 +577,12 @@ const Layout = ({ children }) => {
   };
 
   const closeSidebar = () => setSidebarOpen(false);
+  
+  // Toggle name expansion
+  const toggleNameExpansion = (e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    setNameExpanded(!nameExpanded);
+  };
 
   return (
     <LayoutContainer>
@@ -603,7 +654,7 @@ const Layout = ({ children }) => {
             <h1>HabitQuest</h1>
           </Logo>
 
-          <UserInfo>
+          <UserInfo $nameExpanded={nameExpanded} onClick={toggleNameExpansion}>
             <div className="avatar">
               {user?.username?.charAt(0).toUpperCase()}
             </div>
