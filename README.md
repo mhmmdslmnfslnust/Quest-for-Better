@@ -205,7 +205,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 Email: support@habitquest.app
+- 📧 Email: NULL (Can contact on on my mail of this profile)
 - 🐛 Issues: [GitHub Issues](https://github.com/mhmmdslmnfslnust/Quest-for-Better/issues)
 - 💬 Discussions: [GitHub Discussions](https://github.com/mhmmdslmnfslnust/Quest-for-Better/discussions)
 
