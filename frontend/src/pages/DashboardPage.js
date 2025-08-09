@@ -182,35 +182,6 @@ const StatCard = styled(motion.div)`
       opacity: 0.8;
     }
   }
-
-  ${props => props.$clickable && `
-    .icon::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 16px;
-      height: 16px;
-      background: var(--color-primary);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .icon::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 12px;
-      height: 12px;
-      background: white;
-      border-radius: 50%;
-      z-index: 2;
-      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'/%3E%3C/svg%3E") center/8px no-repeat;
-    }
-  `}
 `;
 
 const SectionTitle = styled.h2`
@@ -229,21 +200,6 @@ const SectionTitle = styled.h2`
     &:hover {
       color: var(--color-primary);
       transform: translateX(4px);
-      
-      &::after {
-        content: 'Click to manage habits';
-        position: absolute;
-        right: -150px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        white-space: nowrap;
-        z-index: 10;
-      }
       
       svg {
         color: var(--color-primary);
@@ -626,10 +582,9 @@ const DashboardPage = () => {
 
       <ContentGrid>
         <TodayHabits>
-          <SectionTitle $clickable onClick={handleNavigateToHabits} title="Click to manage your habits">
+          <SectionTitle $clickable onClick={handleNavigateToHabits}>
             <Calendar size={24} />
             Today's Habits
-            <ExternalLink size={16} style={{ opacity: 0.5, marginLeft: 'auto' }} />
           </SectionTitle>
           
           {todayHabits.length > 0 ? (
