@@ -61,6 +61,7 @@ export const habitsAPI = {
   update: (id, habitData) => api.put(`/habits/${id}`, habitData),
   delete: (id) => api.delete(`/habits/${id}`),
   getTodayStatus: () => api.get('/habits/today'),
+  getTodayHabitsStatus: () => api.get('/habits/today-status'),
   logCompletion: (id, logData) => api.post(`/habits/${id}/log`, logData),
   getLogs: (id, startDate, endDate) => api.get(`/habits/${id}/logs`, {
     params: { start_date: startDate, end_date: endDate }
