@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import styled from 'styled-components';
 import { 
   Target, 
@@ -20,10 +20,27 @@ const CardContainer = styled.div`
   position: relative;
   overflow: hidden;
 
+  ${props => props.$isHighlighted && `
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3);
+    background: rgba(var(--color-primary-rgb), 0.05);
+    animation: highlightPulse 0.6s ease-out;
+    
+    @keyframes highlightPulse {
+      0% { box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3); }
+      50% { box-shadow: 0 0 40px rgba(var(--color-primary-rgb), 0.6); }
+      100% { box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3); }
+    }
+  `}
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     border-color: rgba(255, 255, 255, 0.3);
+    
+    ${props => props.$isHighlighted && `
+      box-shadow: 0 20px 40px rgba(var(--color-primary-rgb), 0.2);
+    `}
   }
 
   &::before {
@@ -215,15 +232,16 @@ const ProgressFill = styled.div`
   transition: width 0.3s ease;
 `;
 
-const HabitCard = ({ 
+const HabitCard = forwardRef(({ 
   habit, 
   stats,
   onEdit, 
   onDelete, 
   onTrack,
   isCompletedToday,
+  isHighlighted = false,
   children 
-}) => {
+}, ref) => {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 1: return '#22c55e'; // Easy - Green
@@ -247,7 +265,7 @@ const HabitCard = ({
   const difficultyColor = getDifficultyColor(habit.difficulty);
 
   return (
-    <CardContainer color={habit.color}>
+    <CardContainer ref={ref} color={habit.color} $isHighlighted={isHighlighted}>
       <Header>
         <HabitInfo>
           <HabitIcon>{habit.icon}</HabitIcon>
@@ -326,6 +344,8 @@ const HabitCard = ({
       </TrackingSection>
     </CardContainer>
   );
-};
+});
+
+HabitCard.displayName = 'HabitCard';
 
 export default HabitCard;
