@@ -88,11 +88,21 @@ router.get('/overview', authenticateToken, asyncHandler(async (req, res) => {
             LIMIT 5
         `, [period, userId]);
         
-        // Calculate wellness score (composite metric)
-        const totalDays = performanceTrend.length;
-        const activeDays = performanceTrend.filter(day => day.total_habits > 0).length;
-        const avgSuccessRate = performanceTrend.length > 0 
-            ? performanceTrend.reduce((sum, day) => sum + day.success_rate, 0) / totalDays
+        // Calculate wellness score (composite metric) based on actual user activity period
+        const userJoinDate = new Date(userStats.created_at);
+        const currentDate = new Date();
+        const daysSinceJoin = Math.ceil((currentDate - userJoinDate) / (1000 * 60 * 60 * 24));
+        
+        // Use the shorter of: requested period or days since user joined
+        const effectivePeriod = Math.min(parseInt(period), daysSinceJoin);
+        
+        // Only consider days within the effective period
+        const relevantDays = performanceTrend.slice(-effectivePeriod);
+        
+        const totalDays = relevantDays.length;
+        const activeDays = relevantDays.filter(day => day.total_habits > 0).length;
+        const avgSuccessRate = totalDays > 0 
+            ? relevantDays.reduce((sum, day) => sum + day.success_rate, 0) / totalDays
             : 0;
         const consistencyScore = totalDays > 0 ? (activeDays / totalDays) * 100 : 0;
         const wellnessScore = Math.round((avgSuccessRate * 0.6) + (consistencyScore * 0.4));
@@ -107,7 +117,9 @@ router.get('/overview', authenticateToken, asyncHandler(async (req, res) => {
                 avg_success_rate: Math.round(avgSuccessRate),
                 consistency_score: Math.round(consistencyScore),
                 active_days: activeDays,
-                total_days: totalDays
+                total_days: totalDays,
+                days_since_join: daysSinceJoin,
+                effective_period: effectivePeriod
             }
         });
         
@@ -121,6 +133,18 @@ router.get('/overview', authenticateToken, asyncHandler(async (req, res) => {
 router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.id;
+        
+        // Get user join date to determine effective analysis period
+        const userStats = await db.get(`
+            SELECT created_at FROM users WHERE id = ?
+        `, [userId]);
+        
+        const userJoinDate = new Date(userStats.created_at);
+        const currentDate = new Date();
+        const daysSinceJoin = Math.ceil((currentDate - userJoinDate) / (1000 * 60 * 60 * 24));
+        
+        // Use effective period for patterns (max 90 days or since user joined)
+        const effectivePatternPeriod = Math.min(90, daysSinceJoin);
         
         // Daily pattern analysis (which days of week are most successful)
         const dailyPatterns = await db.query(`
@@ -141,10 +165,10 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             FROM habit_logs hl
             JOIN habits h ON hl.habit_id = h.id
             WHERE h.user_id = ?
-            AND hl.date >= date('now', '-90 days')
+            AND hl.date >= date('now', '-' || ? || ' days')
             GROUP BY strftime('%w', hl.date)
             ORDER BY day_number
-        `, [userId]);
+        `, [userId, effectivePatternPeriod]);
         
         // Hourly pattern analysis (what time of day is most successful)
         const hourlyPatterns = await db.query(`
@@ -156,13 +180,14 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             FROM habit_logs hl
             JOIN habits h ON hl.habit_id = h.id
             WHERE h.user_id = ?
-            AND hl.date >= date('now', '-90 days')
+            AND hl.date >= date('now', '-' || ? || ' days')
             GROUP BY strftime('%H', hl.logged_at)
             HAVING COUNT(*) >= 3
             ORDER BY hour
-        `, [userId]);
+        `, [userId, effectivePatternPeriod]);
         
-        // Monthly progression
+        // Monthly progression - use effective period for months too
+        const effectiveMonthsPeriod = Math.min(12, Math.ceil(daysSinceJoin / 30));
         const monthlyProgression = await db.query(`
             SELECT 
                 strftime('%Y-%m', hl.date) as month,
@@ -173,15 +198,20 @@ router.get('/patterns', authenticateToken, asyncHandler(async (req, res) => {
             FROM habit_logs hl
             JOIN habits h ON hl.habit_id = h.id
             WHERE h.user_id = ?
-            AND hl.date >= date('now', '-12 months')
+            AND hl.date >= date('now', '-' || ? || ' months')
             GROUP BY strftime('%Y-%m', hl.date)
             ORDER BY month
-        `, [userId]);
+        `, [userId, effectiveMonthsPeriod]);
         
         successResponse(res, {
             daily_patterns: dailyPatterns,
             hourly_patterns: hourlyPatterns,
-            monthly_progression: monthlyProgression
+            monthly_progression: monthlyProgression,
+            analysis_period: {
+                days_since_join: daysSinceJoin,
+                effective_days_period: effectivePatternPeriod,
+                effective_months_period: effectiveMonthsPeriod
+            }
         });
         
     } catch (error) {
