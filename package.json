@@ -1,0 +1,23 @@
+{
+  "name": "habitquest-fullstack",
+  "version": "1.0.0",
+  "description": "HabitQuest - Full-stack Gamified Wellness Application",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:backend": "cd backend && npm install && npm run build",
+    "start": "cd backend && npm start",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  }
+}
