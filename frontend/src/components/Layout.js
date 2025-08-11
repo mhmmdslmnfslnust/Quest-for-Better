@@ -1,5 +1,7 @@
+'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -17,21 +19,11 @@ import {
   ChevronRight,
   GripVertical
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../lib/AuthContext';
+import { useTheme } from '../lib/ThemeContext';
 
 const LayoutContainer = styled.div`
-          <UserInfo $width={sidebarWidth}>
-            <div className="avatar">
-              {user?.username?.charAt(0).toUpperCase()}
-            </div>
-            <div className="info">
-              <div className="name">{user?.username}</div>
-              <div className="level">
-                ⭐ Level {user?.level || 1} • {user?.total_points || 0} pts
-              </div>
-            </div>
-          </UserInfo>flex;
+  display: flex;
   min-height: 100vh;
   background: var(--background-gradient);
   color: var(--color-text-primary);
@@ -77,48 +69,6 @@ const SidebarContent = styled.div`
   visibility: ${props => props.$isCollapsed ? 'hidden' : 'visible'};
   transition: opacity 0.2s ease, visibility 0.2s ease;
   transition-delay: ${props => props.$isCollapsed ? '0s' : '0.1s'};
-`;
-
-const ResizeHandle = styled.div`
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background: transparent;
-  cursor: col-resize;
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-
-  &:hover {
-    opacity: 1;
-    background: rgba(99, 102, 241, 0.1);
-  }
-
-  &:active {
-    background: rgba(99, 102, 241, 0.2);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    right: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2px;
-    height: 40px;
-    background: var(--color-primary);
-    border-radius: 1px;
-    opacity: 0.5;
-  }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
 `;
 
 const CollapseToggle = styled.button`
@@ -184,27 +134,6 @@ const MobileSidebar = styled(motion.div)`
   }
 `;
 
-const WidthIndicator = styled.div`
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  opacity: ${props => props.$isVisible ? 1 : 0};
-  visibility: ${props => props.$isVisible ? 'visible' : 'hidden'};
-  transition: all 0.2s ease;
-  pointer-events: none;
-  z-index: 10000;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
 const MobileHeader = styled.header`
   display: none;
   
@@ -254,16 +183,11 @@ const UserInfo = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  position: relative;
 
   &:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
   }
 
   .avatar {
@@ -279,34 +203,19 @@ const UserInfo = styled.div`
     font-weight: 600;
     color: white;
     flex-shrink: 0;
-    transition: all 0.2s ease;
   }
 
   .info {
     flex: 1;
-    min-width: 0; /* Allow text to shrink */
+    min-width: 0;
     
     .name {
       font-weight: 600;
       font-size: ${props => props.$width < 260 ? '14px' : '16px'};
       margin-bottom: ${props => props.$width < 260 ? '0px' : '4px'};
-      transition: all 0.3s ease;
-      cursor: pointer;
-      line-height: 1.4;
-      
-      /* Truncated by default */
-      ${props => !props.$nameExpanded && `
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      `}
-      
-      /* Expanded state - multi-line */
-      ${props => props.$nameExpanded && `
-        white-space: normal;
-        word-break: break-word;
-        max-height: none;
-      `}
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     .level {
@@ -320,30 +229,13 @@ const UserInfo = styled.div`
       white-space: nowrap;
     }
   }
-
-  /* Click indicator */
-  &::after {
-    content: '${props => props.$nameExpanded ? '▼' : '▶'}';
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 10px;
-    opacity: 0.5;
-    transition: all 0.2s ease;
-    pointer-events: none;
-  }
-
-  &:hover::after {
-    opacity: 0.8;
-  }
 `;
 
 const Nav = styled.nav`
   flex: 1;
 `;
 
-const NavItem = styled(NavLink)`
+const NavItem = styled(Link)`
   display: flex;
   align-items: center;
   gap: ${props => props.$width < 260 ? '8px' : '12px'};
@@ -457,141 +349,50 @@ const navigation = [
 ];
 
 const Layout = ({ children }) => {
-  // Sidebar state management
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile only
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop collapse
-  const [sidebarWidth, setSidebarWidth] = useState(280); // Desktop width
-  const [isResizing, setIsResizing] = useState(false);
-  const [showWidthIndicator, setShowWidthIndicator] = useState(false);
-  const [nameExpanded, setNameExpanded] = useState(false); // Name expansion toggle
-  
-  // Refs for resize functionality
-  const sidebarRef = useRef(null);
-  const resizeTimeoutRef = useRef(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
   
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Width constraints
-  const MIN_WIDTH = 220; // Increased from 200px for better UX
-  const MAX_WIDTH = 350;
-  const DEFAULT_WIDTH = 280;
-
-  // Load saved preferences on mount
+  // Load saved preferences
   useEffect(() => {
-    const savedCollapsed = localStorage.getItem('habitquest_sidebar_collapsed');
-    const savedWidth = localStorage.getItem('habitquest_sidebar_width');
-    
-    if (savedCollapsed === 'true') {
-      setSidebarCollapsed(true);
-    }
-    
-    if (savedWidth && !isNaN(parseInt(savedWidth))) {
-      const width = parseInt(savedWidth);
-      if (width >= MIN_WIDTH && width <= MAX_WIDTH) {
-        setSidebarWidth(width);
+    if (typeof window !== 'undefined') {
+      const savedCollapsed = localStorage.getItem('habitquest_sidebar_collapsed');
+      const savedWidth = localStorage.getItem('habitquest_sidebar_width');
+      
+      if (savedCollapsed === 'true') {
+        setSidebarCollapsed(true);
+      }
+      
+      if (savedWidth && !isNaN(parseInt(savedWidth))) {
+        const width = parseInt(savedWidth);
+        if (width >= 220 && width <= 350) {
+          setSidebarWidth(width);
+        }
       }
     }
   }, []);
 
-  // Save preferences to localStorage
-  const savePreferences = useCallback((collapsed, width) => {
-    localStorage.setItem('habitquest_sidebar_collapsed', collapsed.toString());
-    localStorage.setItem('habitquest_sidebar_width', width.toString());
-  }, []);
-
-  // Toggle sidebar collapse
-  const toggleSidebarCollapse = useCallback(() => {
+  const toggleSidebarCollapse = () => {
     const newCollapsed = !sidebarCollapsed;
     setSidebarCollapsed(newCollapsed);
-    savePreferences(newCollapsed, sidebarWidth);
-  }, [sidebarCollapsed, sidebarWidth, savePreferences]);
-
-  // Resize handling
-  const startResize = useCallback((e) => {
-    e.preventDefault();
-    setIsResizing(true);
-    setShowWidthIndicator(true);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, []);
-
-  const handleResize = useCallback((e) => {
-    if (!isResizing) return;
-    
-    // Calculate new width with proper constraints
-    const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, e.clientX));
-    setSidebarWidth(newWidth);
-    
-    // Clear existing timeout
-    if (resizeTimeoutRef.current) {
-      clearTimeout(resizeTimeoutRef.current);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('habitquest_sidebar_collapsed', newCollapsed.toString());
     }
-    
-    // Hide indicator after 1 second of no movement
-    resizeTimeoutRef.current = setTimeout(() => {
-      setShowWidthIndicator(false);
-    }, 1000);
-  }, [isResizing, MIN_WIDTH, MAX_WIDTH]);
-
-  const stopResize = useCallback(() => {
-    if (!isResizing) return;
-    
-    setIsResizing(false);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    savePreferences(sidebarCollapsed, sidebarWidth);
-    
-    // Hide indicator after a short delay
-    setTimeout(() => {
-      setShowWidthIndicator(false);
-    }, 500);
-  }, [isResizing, sidebarCollapsed, sidebarWidth, savePreferences]);
-
-  // Event listeners for resize
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleResize);
-      document.addEventListener('mouseup', stopResize);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleResize);
-        document.removeEventListener('mouseup', stopResize);
-      };
-    }
-  }, [isResizing, handleResize, stopResize]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-    };
-  }, []);
+  };
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    router.push('/');
   };
 
   const closeSidebar = () => setSidebarOpen(false);
-  
-  // Toggle name expansion
-  const toggleNameExpansion = (e) => {
-    e.stopPropagation(); // Prevent event bubbling
-    setNameExpanded(!nameExpanded);
-  };
 
   return (
     <LayoutContainer>
-      {/* Width Indicator */}
-      <WidthIndicator $isVisible={showWidthIndicator}>
-        {sidebarWidth}px
-      </WidthIndicator>
-
-      {/* Collapse Toggle Button */}
       <CollapseToggle
         $isCollapsed={sidebarCollapsed}
         $width={sidebarWidth}
@@ -601,7 +402,6 @@ const Layout = ({ children }) => {
         {sidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
       </CollapseToggle>
 
-      {/* Mobile Header */}
       <MobileHeader>
         <Logo>
           <span className="emoji">🎯</span>
@@ -612,7 +412,6 @@ const Layout = ({ children }) => {
         </MenuButton>
       </MobileHeader>
 
-      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <MobileSidebar
@@ -624,26 +423,11 @@ const Layout = ({ children }) => {
         )}
       </AnimatePresence>
 
-      {/* Main Sidebar */}
       <Sidebar
-        ref={sidebarRef}
         $isOpen={sidebarOpen}
         $isCollapsed={sidebarCollapsed}
         $width={sidebarWidth}
-        $isResizing={isResizing}
-        initial={{ x: sidebarCollapsed ? -sidebarWidth : 0 }}
-        animate={{ x: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {/* Resize Handle */}
-        {!sidebarCollapsed && (
-          <ResizeHandle
-            onMouseDown={startResize}
-            title="Drag to resize sidebar"
-          />
-        )}
-
-        {/* Close Button (Mobile) */}
         <SidebarContent $isCollapsed={sidebarCollapsed}>
           <CloseButton onClick={closeSidebar}>
             <X size={20} />
@@ -654,7 +438,7 @@ const Layout = ({ children }) => {
             <h1>HabitQuest</h1>
           </Logo>
 
-          <UserInfo $nameExpanded={nameExpanded} onClick={toggleNameExpansion}>
+          <UserInfo $width={sidebarWidth}>
             <div className="avatar">
               {user?.username?.charAt(0).toUpperCase()}
             </div>
@@ -669,12 +453,14 @@ const Layout = ({ children }) => {
           <Nav>
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname === item.href;
               return (
                 <NavItem
                   key={item.name}
-                  to={item.href}
+                  href={item.href}
                   onClick={closeSidebar}
                   $width={sidebarWidth}
+                  className={isActive ? 'active' : ''}
                 >
                   <Icon />
                   <span>{item.name}</span>
@@ -690,7 +476,6 @@ const Layout = ({ children }) => {
         </SidebarContent>
       </Sidebar>
 
-      {/* Main Content */}
       <MainContent 
         $isCollapsed={sidebarCollapsed}
         $sidebarWidth={sidebarWidth}
