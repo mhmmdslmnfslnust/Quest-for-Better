@@ -1,17 +1,17 @@
 # HabitQuest - Gamified Wellness App
 
-A comprehensive gamified wellness application designed to help users break bad habits and build good ones through engaging game mechanics. Now built with **Next.js 14** for optimal performance and modern web standards.
+A comprehensive gamified wellness application designed to help users break bad habits and build good ones through engaging game mechanics.
 
 ## 🎮 Features
 
-### ✅ Core Functionality (Fully Implemented in Next.js)
+### ✅ Core Functionality (Implemented)
 - **Daily Habit Tracking**: Intuitive daily completion logging with points
 - **Points & Streaks**: Earn points for consistency and build streak momentum
-- **Achievement System**: Complete achievement gallery with progress tracking
-- **Challenge System**: Community challenges with participation and progress tracking
-- **Advanced Analytics**: Comprehensive stats dashboard with insights and trends
-- **User Profile Management**: Theme switching, settings, and account management
-- **Responsive Design**: Mobile-first approach with advanced sidebar layout
+- **Achievement System**: 19 achievements with dramatic visual discrimination
+- **Challenge System**: Time-limited challenges with community competition and leave functionality
+- **Advanced Analytics**: Monthly calendar view with 6-tier color system for success visualization
+- **Advanced Filtering**: Search, category, difficulty, and status filters
+- **Progress Visualization**: Real-time completion rates and streak counters
 
 ### ✅ Habit Management (Fully Functional)
 - **Habit Categories**: Health, Productivity, Social, Mindfulness, and more
@@ -38,13 +38,12 @@ A comprehensive gamified wellness application designed to help users break bad h
 
 ## 🛠️ Technology Stack
 
-### Frontend (Next.js 14)
-- **Next.js 14** with App Router for modern React framework
-- **React 18** for component-based UI development
-- **Styled Components** for CSS-in-JS with theme support
+### Frontend
+- **React 18** for modern component-based UI development
+- **Styled Components** for modern, responsive design with glass morphism
+- **Chart.js & Recharts** for advanced data visualization and analytics
 - **Framer Motion** for smooth animations and transitions
-- **Lucide React** for modern icon library
-- **React Hot Toast** for elegant notifications
+- **PWA Support** for mobile-first experience
 
 ### Backend
 - **Node.js** with Express.js for RESTful API
@@ -98,7 +97,7 @@ npm run dev
 
 # Terminal 2: Start frontend (port 3000)
 cd frontend
-npm run dev
+npm start
 ```
 
 5. **Open your browser**
@@ -171,22 +170,16 @@ Choose from:
 
 ## 🏗️ Architecture
 
-### Frontend Structure (Next.js 14)
+### Frontend Structure
 ```
-frontend/src/
-├── app/                    # Next.js App Router pages
-│   ├── layout.js          # Root layout
-│   ├── page.js            # Landing page
-│   ├── dashboard/         # Dashboard page
-│   ├── habits/            # Habits management
-│   ├── achievements/      # Achievement gallery
-│   ├── challenges/        # Community challenges
-│   ├── stats/            # Analytics dashboard
-│   └── profile/          # User profile & settings
-├── components/            # Reusable UI components
-├── lib/                  # Context providers & utilities
-├── services/             # API communication
-└── styles/               # Global styles & themes
+src/
+├── components/         # Reusable UI components
+├── pages/             # Main application pages
+├── services/          # API communication
+├── hooks/             # Custom React hooks
+├── context/           # State management
+├── utils/             # Helper functions
+└── styles/            # Global styles and themes
 ```
 
 ### Backend Structure

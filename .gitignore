@@ -33,10 +33,5 @@ Thumbs.db
 
 issues.txt
 
-# Next.js
-.next/
-out/
-
-frontend/.next/
-frontend/node_modules/
-backend/node_modules/
+.next
+frontend/.next
