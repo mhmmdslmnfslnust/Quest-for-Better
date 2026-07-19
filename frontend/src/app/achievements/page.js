@@ -1,10 +1,12 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Award, Target, Zap } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import Layout from '../../components/Layout';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { achievementsAPI } from '../../services/api';
 
 const AchievementsContainer = styled.div`
   max-width: 1200px;
@@ -178,73 +180,59 @@ const AchievementCard = styled(motion.div)`
   }
 `;
 
-// Mock achievements data
-const mockAchievements = [
-  {
-    id: 1,
-    title: 'First Steps',
-    description: 'Complete your first habit',
-    icon: '🎯',
-    unlocked: true,
-    progress: 'Completed',
-    rarity: 'common',
-    unlockedAt: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'Week Warrior',
-    description: 'Maintain a 7-day streak',
-    icon: '🔥',
-    unlocked: true,
-    progress: 'Completed',
-    rarity: 'rare',
-    unlockedAt: '2024-01-22'
-  },
-  {
-    id: 3,
-    title: 'Habit Master',
-    description: 'Create 10 different habits',
-    icon: '👑',
-    unlocked: false,
-    progress: '4/10 habits created',
-    rarity: 'epic'
-  },
-  {
-    id: 4,
-    title: 'Consistency King',
-    description: 'Maintain a 30-day streak',
-    icon: '💎',
-    unlocked: false,
-    progress: '12/30 days',
-    rarity: 'legendary'
-  },
-  {
-    id: 5,
-    title: 'Early Bird',
-    description: 'Complete morning routine 10 times',
-    icon: '🌅',
-    unlocked: true,
-    progress: 'Completed',
-    rarity: 'common',
-    unlockedAt: '2024-02-01'
-  },
-  {
-    id: 6,
-    title: 'Social Butterfly',
-    description: 'Complete 5 community challenges',
-    icon: '🦋',
-    unlocked: false,
-    progress: '2/5 challenges',
-    rarity: 'rare'
-  }
-];
-
 export default function AchievementsPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [achievements, setAchievements] = useState([]);
+  const [userAchievements, setUserAchievements] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAchievements();
+    }
+  }, [isAuthenticated]);
+
+  const fetchAchievements = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [allAchievements, earnedAchievements] = await Promise.all([
+        achievementsAPI.getAll(),
+        achievementsAPI.getUserAchievements()
+      ]);
+      
+      // Merge achievements with user progress
+      const mergedAchievements = (Array.isArray(allAchievements) ? allAchievements : []).map(achievement => {
+        const earned = (Array.isArray(earnedAchievements) ? earnedAchievements : []).find(
+          ua => ua.achievement_id === achievement.id
+        );
+        return {
+          ...achievement,
+          unlocked: !!earned,
+          unlockedAt: earned?.earned_at
+        };
+      });
+      
+      setAchievements(mergedAchievements);
+      setUserAchievements(Array.isArray(earnedAchievements) ? earnedAchievements : []);
+    } catch (err) {
+      console.error('Error fetching achievements:', err);
+      setError('Failed to load achievements');
+      setAchievements([]);
+      setUserAchievements([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  const unlockedCount = mockAchievements.filter(a => a.unlocked).length;
-  const totalCount = mockAchievements.length;
-  const completionPercentage = Math.round((unlockedCount / totalCount) * 100);
+  if (isLoading) {
+    return <LoadingSpinner message="Loading achievements..." />;
+  }
+
+  const unlockedCount = achievements.filter(a => a.unlocked).length;
+  const totalCount = achievements.length;
+  const completionPercentage = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
 
   return (
     <Layout>
@@ -270,39 +258,64 @@ export default function AchievementsPage() {
           </div>
         </Header>
 
+        {error && (
+          <div style={{ 
+            color: 'var(--color-danger)', 
+            padding: '16px', 
+            marginBottom: '16px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
         <AchievementsGrid>
-          {mockAchievements.map((achievement, index) => (
-            <AchievementCard
-              key={achievement.id}
-              $unlocked={achievement.unlocked}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-            >
-              <div className={`rarity-badge ${achievement.rarity}`}>
-                {achievement.rarity}
-              </div>
-              
-              <div className="achievement-icon">
-                {achievement.icon}
-              </div>
-              
-              <div className="achievement-title">
-                {achievement.title}
-              </div>
-              
-              <div className="achievement-description">
-                {achievement.description}
-              </div>
-              
-              <div className="achievement-progress">
-                {achievement.unlocked 
-                  ? `🎉 ${achievement.progress}` 
-                  : achievement.progress
-                }
-              </div>
-            </AchievementCard>
-          ))}
+          {achievements.length > 0 ? (
+            achievements.map((achievement, index) => (
+              <AchievementCard
+                key={achievement.id}
+                $unlocked={achievement.unlocked}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <div className={`rarity-badge ${achievement.rarity || 'common'}`}>
+                  {achievement.rarity || 'common'}
+                </div>
+                
+                <div className="achievement-icon">
+                  {achievement.badge_emoji || '🏆'}
+                </div>
+                
+                <div className="achievement-title">
+                  {achievement.name}
+                </div>
+                
+                <div className="achievement-description">
+                  {achievement.description}
+                </div>
+                
+                <div className="achievement-progress">
+                  {achievement.unlocked 
+                    ? `🎉 Completed!` 
+                    : `${achievement.condition_value} ${achievement.condition_type} needed`
+                  }
+                </div>
+              </AchievementCard>
+            ))
+          ) : (
+            <div style={{ 
+              gridColumn: '1 / -1', 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: 'var(--color-text-secondary)'
+            }}>
+              <Trophy size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <p>No achievements available yet. Keep building habits to unlock achievements!</p>
+            </div>
+          )}
         </AchievementsGrid>
       </AchievementsContainer>
     </Layout>

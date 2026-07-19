@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const Habit = require('../models/Habit');
+const Achievement = require('../models/Achievement');
 const { 
     authenticateToken,
     handleValidationErrors,
@@ -15,11 +16,13 @@ const router = express.Router();
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
     try {
         const habits = await Habit.findByUserId(req.user.id);
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         
-        // Enhance habits with current streak and stats
+        // Enhance habits with current streak, stats, and today's completion status
         const enhancedHabits = await Promise.all(habits.map(async (habit) => {
             const stats = await Habit.getStatistics(habit.id);
             const currentStreak = await Habit.getCurrentStreak(habit.id);
+            const todayLog = await Habit.getLogForDate(habit.id, today);
             
             return {
                 ...habit,
@@ -27,7 +30,8 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
                 successful_logs: stats?.successful_logs || 0,
                 total_logs: stats?.total_logs || 0,
                 points_earned: stats?.total_points_earned || 0,
-                best_streak: stats?.best_streak || 0
+                best_streak: stats?.best_streak || 0,
+                completed_today: todayLog ? todayLog.success === 1 : false
             };
         }));
         
@@ -105,6 +109,11 @@ router.post('/', authenticateToken, [
 
         const result = await Habit.create(habitData);
         const newHabit = await Habit.findById(result.id);
+
+        // Check and award achievements after creating habit (async, don't wait)
+        Achievement.checkAndAwardAchievements(req.user.id).catch(err => {
+            console.error('Achievement check error:', err);
+        });
 
         successResponse(res, newHabit, 'Habit created successfully');
     } catch (error) {
@@ -257,6 +266,13 @@ router.post('/:id/log', authenticateToken, [
         }
 
         await Habit.logCompletion(req.params.id, date, success, notes || '');
+        
+        // Check and award achievements after logging habit (async, don't wait)
+        if (success) {
+            Achievement.checkAndAwardAchievements(req.user.id).catch(err => {
+                console.error('Achievement check error:', err);
+            });
+        }
         
         // Get the updated log entry to return
         const logEntry = await Habit.getLogByDate(req.params.id, date);

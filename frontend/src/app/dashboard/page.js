@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../lib/AuthContext';
 import Layout from '../../components/Layout';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { statsAPI, habitsAPI } from '../../services/api';
 
 const DashboardContainer = styled.div`
   max-width: 1200px;
@@ -203,16 +204,36 @@ export default function DashboardPage() {
     }
 
     if (isAuthenticated) {
-      // Simulate loading dashboard data
-      setTimeout(() => {
-        setDashboardData({
-          totalHabits: 8,
-          completedToday: 6,
-          currentStreak: 12,
-          totalPoints: user?.total_points || 1250
-        });
-        setIsLoading(false);
-      }, 1000);
+      // Fetch real dashboard data from API
+      const fetchDashboardData = async () => {
+        try {
+          setIsLoading(true);
+          const [dashboardStats, todayHabits] = await Promise.all([
+            statsAPI.getDashboard(),
+            habitsAPI.getTodayStatus()
+          ]);
+          
+          setDashboardData({
+            totalHabits: dashboardStats.total_habits || 0,
+            completedToday: todayHabits.completed_count || 0,
+            currentStreak: user?.current_streak || 0,
+            totalPoints: user?.total_points || 0
+          });
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error);
+          // Set defaults on error
+          setDashboardData({
+            totalHabits: 0,
+            completedToday: 0,
+            currentStreak: 0,
+            totalPoints: user?.total_points || 0
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchDashboardData();
     }
   }, [isAuthenticated, loading, router, user]);
 

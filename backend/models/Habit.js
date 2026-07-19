@@ -179,6 +179,17 @@ class Habit {
         return await db.query(sql, [habitId, startDate, endDate]);
     }
 
+    // Get log for a specific date
+    static async getLogForDate(habitId, date) {
+        const sql = `
+            SELECT * FROM habit_logs
+            WHERE habit_id = ? AND date = ?
+            LIMIT 1
+        `;
+        
+        return await db.get(sql, [habitId, date]);
+    }
+
     // Get habit statistics
     static async getStatistics(habitId) {
         const sql = `

@@ -1,10 +1,12 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Zap, Users, Calendar, Trophy, Target, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import Layout from '../../components/Layout';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { challengesAPI } from '../../services/api';
 
 const ChallengesContainer = styled.div`
   max-width: 1200px;
@@ -50,10 +52,32 @@ const ChallengeCard = styled(motion.div)`
   position: relative;
   overflow: hidden;
 
+  ${props => props.$joined && `
+    background: rgba(16, 185, 129, 0.08);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 24px rgba(16, 185, 129, 0.15);
+    
+    &::before {
+      content: '✓ JOINED';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--color-accent);
+      background: rgba(16, 185, 129, 0.2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+  `}
+
   &:hover {
     transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border-color: ${props => props.$joined ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255, 255, 255, 0.2)'};
+    box-shadow: ${props => props.$joined ? 
+      '0 8px 32px rgba(16, 185, 129, 0.2)' : 
+      '0 8px 32px rgba(0, 0, 0, 0.1)'};
   }
 
   .challenge-header {
@@ -201,94 +225,83 @@ const JoinButton = styled(motion.button)`
   }
 `;
 
-// Mock challenges data
-const mockChallenges = [
-  {
-    id: 1,
-    title: '30-Day Morning Routine',
-    description: 'Start your day right with a consistent morning routine for 30 days',
-    icon: '🌅',
-    color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    difficulty: 'medium',
-    participants: 1247,
-    duration: 30,
-    reward: 500,
-    progress: 15,
-    joined: true
-  },
-  {
-    id: 2,
-    title: 'Fitness February',
-    description: 'Complete at least 30 minutes of exercise every day this February',
-    icon: '💪',
-    color: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    difficulty: 'hard',
-    participants: 892,
-    duration: 28,
-    reward: 750,
-    progress: 0,
-    joined: false
-  },
-  {
-    id: 3,
-    title: 'Mindfulness March',
-    description: 'Practice 10 minutes of meditation daily for the entire month',
-    icon: '🧘',
-    color: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    difficulty: 'easy',
-    participants: 2156,
-    duration: 31,
-    reward: 400,
-    progress: 0,
-    joined: false
-  },
-  {
-    id: 4,
-    title: '7-Day Hydration Challenge',
-    description: 'Drink at least 8 glasses of water every day for a week',
-    icon: '💧',
-    color: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-    difficulty: 'easy',
-    participants: 3421,
-    duration: 7,
-    reward: 200,
-    progress: 0,
-    joined: false
-  },
-  {
-    id: 5,
-    title: 'Reading Streak',
-    description: 'Read for at least 30 minutes every day for 2 weeks',
-    icon: '📚',
-    color: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-    difficulty: 'medium',
-    participants: 756,
-    duration: 14,
-    reward: 350,
-    progress: 0,
-    joined: false
-  },
-  {
-    id: 6,
-    title: 'Digital Detox Weekend',
-    description: 'Stay off social media for an entire weekend',
-    icon: '📱',
-    color: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    difficulty: 'hard',
-    participants: 432,
-    duration: 2,
-    reward: 300,
-    progress: 0,
-    joined: false
-  }
-];
-
 export default function ChallengesPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [challenges, setChallenges] = useState([]);
+  const [userChallenges, setUserChallenges] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleJoinChallenge = (challengeId) => {
-    console.log('Joining challenge:', challengeId);
-    // TODO: API call to join challenge
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchChallenges();
+    }
+  }, [isAuthenticated]);
+
+  const fetchChallenges = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [allChallenges, joinedChallenges] = await Promise.all([
+        challengesAPI.getAll(),
+        challengesAPI.getUserChallenges()
+      ]);
+      
+      // Merge challenges with user progress
+      const mergedChallenges = (Array.isArray(allChallenges) ? allChallenges : []).map(challenge => {
+        const userChallenge = (Array.isArray(joinedChallenges) ? joinedChallenges : []).find(
+          uc => uc.challenge_id === challenge.id
+        );
+        return {
+          ...challenge,
+          joined: !!userChallenge,
+          progress: userChallenge?.current_progress || 0
+        };
+      });
+      
+      // Sort: Joined challenges first, then by difficulty (hard first), then by participants
+      const sortedChallenges = mergedChallenges.sort((a, b) => {
+        // Priority 1: Joined challenges first
+        if (a.joined && !b.joined) return -1;
+        if (!a.joined && b.joined) return 1;
+        
+        // Priority 2: Difficulty (hard > medium > easy)
+        const difficultyOrder = { hard: 3, medium: 2, easy: 1 };
+        const diffA = difficultyOrder[a.difficulty] || 2;
+        const diffB = difficultyOrder[b.difficulty] || 2;
+        if (diffA !== diffB) return diffB - diffA;
+        
+        // Priority 3: Participant count (more popular first)
+        return (b.participant_count || 0) - (a.participant_count || 0);
+      });
+      
+      setChallenges(sortedChallenges);
+      setUserChallenges(Array.isArray(joinedChallenges) ? joinedChallenges : []);
+    } catch (err) {
+      console.error('Error fetching challenges:', err);
+      setError('Failed to load challenges');
+      setChallenges([]);
+      setUserChallenges([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleJoinChallenge = async (challengeId) => {
+    try {
+      await challengesAPI.join(challengeId);
+      alert('Successfully joined challenge! 🎉');
+      // Refresh challenges to show updated join status
+      fetchChallenges();
+    } catch (err) {
+      console.error('Error joining challenge:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to join challenge';
+      if (errorMsg.includes('Already joined')) {
+        alert('You have already joined this challenge!');
+      } else {
+        alert(`Failed to join challenge: ${errorMsg}`);
+      }
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -300,6 +313,10 @@ export default function ChallengesPage() {
     }
   };
 
+  if (isLoading) {
+    return <LoadingSpinner message="Loading challenges..." />;
+  }
+
   return (
     <Layout>
       <ChallengesContainer>
@@ -310,87 +327,121 @@ export default function ChallengesPage() {
           </p>
         </Header>
 
+        {error && (
+          <div style={{ 
+            color: 'var(--color-danger)', 
+            padding: '16px', 
+            marginBottom: '16px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
         <ChallengesGrid>
-          {mockChallenges.map((challenge, index) => (
-            <ChallengeCard
-              key={challenge.id}
-              $color={challenge.color}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-            >
-              <div className="challenge-header">
-                <div className="challenge-icon">{challenge.icon}</div>
-                <div className={`difficulty-badge ${challenge.difficulty}`}>
-                  {challenge.difficulty}
-                </div>
-              </div>
-
-              <div className="challenge-title">{challenge.title}</div>
-              <div className="challenge-description">{challenge.description}</div>
-
-              <div className="challenge-stats">
-                <div className="stat">
-                  <div className="stat-value">
-                    <Users size={16} style={{ display: 'inline', marginRight: '4px' }} />
-                    {challenge.participants.toLocaleString()}
+          {challenges.length > 0 ? (
+            challenges.map((challenge, index) => (
+              <ChallengeCard
+                key={challenge.id}
+                $joined={challenge.joined}
+                $color={challenge.color || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <div className="challenge-header">
+                  <div className="challenge-icon">{challenge.badge_emoji || '🎯'}</div>
+                  <div className={`difficulty-badge ${challenge.difficulty || 'medium'}`}>
+                    {challenge.difficulty || 'medium'}
                   </div>
-                  <div className="stat-label">Participants</div>
                 </div>
-                <div className="stat">
-                  <div className="stat-value">
-                    <Calendar size={16} style={{ display: 'inline', marginRight: '4px' }} />
-                    {challenge.duration}
-                  </div>
-                  <div className="stat-label">Days</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-value">
-                    <Trophy size={16} style={{ display: 'inline', marginRight: '4px' }} />
-                    {challenge.reward}
-                  </div>
-                  <div className="stat-label">Points</div>
-                </div>
-              </div>
 
-              {challenge.joined && (
-                <div className="challenge-progress">
-                  <div className="progress-header">
-                    <div className="progress-label">Progress</div>
-                    <div className="progress-percentage">
-                      {Math.round((challenge.progress / challenge.duration) * 100)}%
+                <div className="challenge-title">{challenge.name}</div>
+                <div className="challenge-description">{challenge.description}</div>
+
+                <div className="challenge-stats">
+                  <div className="stat">
+                    <div className="stat-value">
+                      <Users size={16} style={{ display: 'inline', marginRight: '4px' }} />
+                      {challenge.participant_count || 0}
+                    </div>
+                    <div className="stat-label">Participants</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-value">
+                      <Calendar size={16} style={{ display: 'inline', marginRight: '4px' }} />
+                      {challenge.duration_days}
+                    </div>
+                    <div className="stat-label">Days</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-value">
+                      <Trophy size={16} style={{ display: 'inline', marginRight: '4px' }} />
+                      {challenge.reward_points}
+                    </div>
+                    <div className="stat-label">Points</div>
+                  </div>
+                </div>
+
+                {challenge.joined && (
+                  <div className="challenge-progress">
+                    <div className="progress-header">
+                      <div className="progress-label">Your Progress</div>
+                      <div className="progress-percentage">
+                        {Math.round((challenge.progress / challenge.target_value) * 100)}%
+                      </div>
+                    </div>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${Math.min((challenge.progress / challenge.target_value) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: 'var(--color-text-secondary)', 
+                      marginTop: '4px',
+                      textAlign: 'right'
+                    }}>
+                      {challenge.progress} / {challenge.target_value}
                     </div>
                   </div>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${(challenge.progress / challenge.duration) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <JoinButton
-                className={challenge.joined ? 'joined' : ''}
-                onClick={() => handleJoinChallenge(challenge.id)}
-                whileHover={{ scale: challenge.joined ? 1 : 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={challenge.joined}
-              >
-                {challenge.joined ? (
-                  <>
-                    <Target size={16} />
-                    In Progress
-                  </>
-                ) : (
-                  <>
-                    Join Challenge
-                    <ArrowRight size={16} />
-                  </>
                 )}
-              </JoinButton>
-            </ChallengeCard>
-          ))}
+
+                <JoinButton
+                  className={challenge.joined ? 'joined' : ''}
+                  onClick={() => !challenge.joined && handleJoinChallenge(challenge.id)}
+                  whileHover={{ scale: challenge.joined ? 1 : 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={challenge.joined}
+                >
+                  {challenge.joined ? (
+                    <>
+                      <Target size={16} />
+                      In Progress
+                    </>
+                  ) : (
+                    <>
+                      Join Challenge
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </JoinButton>
+              </ChallengeCard>
+            ))
+          ) : (
+            <div style={{ 
+              gridColumn: '1 / -1', 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: 'var(--color-text-secondary)'
+            }}>
+              <Zap size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <p>No challenges available yet. Check back soon for exciting new challenges!</p>
+            </div>
+          )}
         </ChallengesGrid>
       </ChallengesContainer>
     </Layout>
